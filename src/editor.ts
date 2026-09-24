@@ -268,20 +268,8 @@ export const withRichBlocks = (editor: RichEditor, options: { firstLineTitle?: (
     return inserted
   }
   const originalApply = editor.apply
-  // Underline and strikethrough used to mount as <u>/<s>. After several mark
-  // splits, the browser expands the DOM selection across those elements and
-  // slate-react adopts it. Hold the characters the user actually marked, and
-  // put that range back if the next selection only grows around it.
-  const decorationMarks = new Set(['underline', 'strikethrough'])
-  let markGuard: { ref: ReturnType<typeof Editor.rangeRef>; text: string; until: number } | undefined
-  let restoringSelection = false
-  const touchesDecoration = (properties: object | undefined) => Boolean(properties && [...decorationMarks].some(mark => mark in properties))
+  let applyingSelection = false
   editor.apply = operation => {
-    if (!restoringSelection && !projectingEditors.has(editor) && operation.type === 'set_node' && (touchesDecoration(operation.properties) || touchesDecoration(operation.newProperties)) && editor.selection && Range.isExpanded(editor.selection) && !markGuard) {
-      try {
-        markGuard = { ref: Editor.rangeRef(editor, editor.selection, { affinity: 'inward' }), text: Editor.string(editor, editor.selection), until: Date.now() + 200 }
-      } catch { markGuard = undefined }
-    }
     if (!projectingEditors.has(editor) && operation.type === 'insert_node' && Element.isElement(operation.node)) {
       const prepared = ensureStableIds([operation.node])[0] as RichElement
       const existing = collectIds(editor.children)
@@ -297,22 +285,106 @@ export const withRichBlocks = (editor: RichEditor, options: { firstLineTitle?: (
         operation = { ...operation, properties: { ...operation.properties, id: createId() } }
       }
     }
-    originalApply(operation)
+    applyingSelection = true
+    try { originalApply(operation) } finally { applyingSelection = false }
     if (operation.type !== 'set_selection') bumpEditorRevision(editor)
-    if (!markGuard || restoringSelection || operation.type !== 'set_selection') return
-    if (Date.now() > markGuard.until) { markGuard.ref.unref(); markGuard = undefined; return }
-    const next = editor.selection
-    if (!next || !Range.isExpanded(next)) { markGuard.ref.unref(); markGuard = undefined; return }
-    let text = ''
-    try { text = Editor.string(editor, next) } catch { markGuard.ref.unref(); markGuard = undefined; return }
-    const restored = markGuard.ref.current
-    if (text === markGuard.text || !restored || text.length <= markGuard.text.length || !text.includes(markGuard.text)) {
-      if (text !== markGuard.text) { markGuard.ref.unref(); markGuard = undefined }
-      return
+  }
+  // Underline/strikethrough split leaves. After several edits the browser
+  // selection no longer matches those leaves, and slate-react copies that DOM
+  // range onto editor.selection — sometimes without an operation. Pin the
+  // characters the user marked, by block offset, and reject a range that only
+  // grows around them.
+  const decorationMarks = new Set(['underline', 'strikethrough'])
+  type MarkPoint = { id: string; offset: number }
+  type MarkGuard = { anchor: MarkPoint; focus: MarkPoint; until: number }
+  let markGuard: MarkGuard | undefined
+  let restoringSelection = false
+  let pendingRestore = false
+  const markPoint = (point: Point): MarkPoint | undefined => {
+    const block = Editor.above(editor, { at: point, match: node => Element.isElement(node) && Editor.isBlock(editor, node) })
+    if (!block || !Element.isElement(block[0]) || typeof block[0].id !== 'string') return undefined
+    try {
+      return { id: block[0].id, offset: Editor.string(editor, { anchor: Editor.start(editor, block[1]), focus: point }).length }
+    } catch { return undefined }
+  }
+  const pointAt = (loc: MarkPoint): Point | undefined => {
+    const entry = Editor.nodes(editor, { at: [], match: node => Element.isElement(node) && node.id === loc.id }).next().value
+    if (!entry) return undefined
+    let remaining = loc.offset
+    for (const [node, path] of Editor.nodes(editor, { at: entry[1], match: Text.isText })) {
+      if (!Text.isText(node)) continue
+      if (remaining <= node.text.length) return { path, offset: remaining }
+      remaining -= node.text.length
     }
+    return Editor.end(editor, entry[1])
+  }
+  const rangeAt = (guard: MarkGuard): Range | undefined => {
+    const anchor = pointAt(guard.anchor), focus = pointAt(guard.focus)
+    return anchor && focus ? { anchor, focus } : undefined
+  }
+  const coversMark = (next: Range, guard: MarkGuard) => {
+    if (guard.anchor.id !== guard.focus.id) return false
+    const start = pointAt({ id: guard.anchor.id, offset: Math.min(guard.anchor.offset, guard.focus.offset) })
+    const end = pointAt({ id: guard.anchor.id, offset: Math.max(guard.anchor.offset, guard.focus.offset) })
+    if (!start || !end) return false
+    try { return Range.includes(next, start) && Range.includes(next, end) } catch { return false }
+  }
+  const growsAround = (next: Range, guard: MarkGuard) => {
+    if (!coversMark(next, guard)) return false
+    const guardLength = Math.abs(guard.focus.offset - guard.anchor.offset)
+    try { return Editor.string(editor, next).length > guardLength } catch { return false }
+  }
+  const rememberMark = (key: string) => {
+    if (!decorationMarks.has(key) || !editor.selection || !Range.isExpanded(editor.selection)) return undefined
+    const anchor = markPoint(editor.selection.anchor), focus = markPoint(editor.selection.focus)
+    if (!anchor || !focus) return undefined
+    let text = ''
+    try { text = Editor.string(editor, editor.selection) } catch { return undefined }
+    return { anchor, focus, text }
+  }
+  const restoreMark = (guard: MarkGuard) => {
+    const restored = rangeAt(guard)
+    if (!restored) return
     restoringSelection = true
     try { Transforms.select(editor, restored) } finally { restoringSelection = false }
   }
+  let currentSelection = editor.selection
+  Object.defineProperty(editor, 'selection', {
+    configurable: true,
+    enumerable: true,
+    get: () => currentSelection,
+    set: next => {
+      const guard = markGuard
+      if (!restoringSelection && guard && next && Range.isRange(next) && Range.isExpanded(next) && Date.now() <= guard.until && growsAround(next, guard)) {
+        const restored = rangeAt(guard)
+        currentSelection = restored ?? currentSelection
+        // A command already notifies React when it finishes. A direct write does not,
+        // so ask for one render that copies this range back to the DOM.
+        if (!applyingSelection && !pendingRestore && restored) {
+          pendingRestore = true
+          queueMicrotask(() => {
+            pendingRestore = false
+            if (!markGuard || Date.now() > markGuard.until) { markGuard = undefined; return }
+            editor.onChange()
+          })
+        }
+        return
+      }
+      if (!restoringSelection && guard && (Date.now() > guard.until || !next || !Range.isRange(next) || !Range.isExpanded(next) || !coversMark(next, guard))) markGuard = undefined
+      currentSelection = next
+    },
+  })
+  const addMark = editor.addMark, removeMark = editor.removeMark
+  const finishMark = (captured: { anchor: MarkPoint; focus: MarkPoint; text: string } | undefined) => {
+    if (!captured) return
+    let now = ''
+    try { now = editor.selection && Range.isExpanded(editor.selection) ? Editor.string(editor, editor.selection) : '' } catch { now = '' }
+    const guard = { anchor: captured.anchor, focus: captured.focus, until: Date.now() + 300 }
+    if (now !== captured.text) restoreMark(guard)
+    markGuard = guard
+  }
+  editor.addMark = (key, value) => { const captured = rememberMark(key); if (captured) markGuard = undefined; addMark(key, value); finishMark(captured) }
+  editor.removeMark = key => { const captured = rememberMark(key); if (captured) markGuard = undefined; removeMark(key); finishMark(captured) }
   const { insertBreak, isInline, isVoid, normalizeNode } = editor
   editor.isInline = (element) => element.type === 'link' || isInline(element)
   editor.isVoid = (element) => VOIDS.includes(element.type) || isVoid(element)
