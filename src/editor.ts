@@ -268,7 +268,20 @@ export const withRichBlocks = (editor: RichEditor, options: { firstLineTitle?: (
     return inserted
   }
   const originalApply = editor.apply
+  // Underline and strikethrough used to mount as <u>/<s>. After several mark
+  // splits, the browser expands the DOM selection across those elements and
+  // slate-react adopts it. Hold the characters the user actually marked, and
+  // put that range back if the next selection only grows around it.
+  const decorationMarks = new Set(['underline', 'strikethrough'])
+  let markGuard: { ref: ReturnType<typeof Editor.rangeRef>; text: string; until: number } | undefined
+  let restoringSelection = false
+  const touchesDecoration = (properties: object | undefined) => Boolean(properties && [...decorationMarks].some(mark => mark in properties))
   editor.apply = operation => {
+    if (!restoringSelection && !projectingEditors.has(editor) && operation.type === 'set_node' && (touchesDecoration(operation.properties) || touchesDecoration(operation.newProperties)) && editor.selection && Range.isExpanded(editor.selection) && !markGuard) {
+      try {
+        markGuard = { ref: Editor.rangeRef(editor, editor.selection, { affinity: 'inward' }), text: Editor.string(editor, editor.selection), until: Date.now() + 200 }
+      } catch { markGuard = undefined }
+    }
     if (!projectingEditors.has(editor) && operation.type === 'insert_node' && Element.isElement(operation.node)) {
       const prepared = ensureStableIds([operation.node])[0] as RichElement
       const existing = collectIds(editor.children)
@@ -286,6 +299,19 @@ export const withRichBlocks = (editor: RichEditor, options: { firstLineTitle?: (
     }
     originalApply(operation)
     if (operation.type !== 'set_selection') bumpEditorRevision(editor)
+    if (!markGuard || restoringSelection || operation.type !== 'set_selection') return
+    if (Date.now() > markGuard.until) { markGuard.ref.unref(); markGuard = undefined; return }
+    const next = editor.selection
+    if (!next || !Range.isExpanded(next)) { markGuard.ref.unref(); markGuard = undefined; return }
+    let text = ''
+    try { text = Editor.string(editor, next) } catch { markGuard.ref.unref(); markGuard = undefined; return }
+    const restored = markGuard.ref.current
+    if (text === markGuard.text || !restored || text.length <= markGuard.text.length || !text.includes(markGuard.text)) {
+      if (text !== markGuard.text) { markGuard.ref.unref(); markGuard = undefined }
+      return
+    }
+    restoringSelection = true
+    try { Transforms.select(editor, restored) } finally { restoringSelection = false }
   }
   const { insertBreak, isInline, isVoid, normalizeNode } = editor
   editor.isInline = (element) => element.type === 'link' || isInline(element)

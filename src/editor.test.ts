@@ -1,4 +1,4 @@
-import { createEditor, Editor, Node as SlateNode } from 'slate'
+import { createEditor, Editor, Transforms, Node as SlateNode } from 'slate'
 import { describe, expect, it } from 'vitest'
 import { applyMarkdownShortcut, applySelectionFormat, getBlockDropDestination, getParagraphListMarker, getSelectionFormat, handleParagraphKey, isAtTableCellStart, isLinkActive, isNativeTextBoundaryBackspace, moveTableSelectionVertically, normalizeLinkUrl, toggleBlock, toggleMark, unwrapLink, withRichBlocks } from './editor'
 import { clearedTableCell, createTable, mergedCellChildren, rectangularSelectionBounds, shouldSelectEmptyCell, shouldSelectWholeCell, shouldSelectWholeCellByGesture, tableCellAnchorAt, tableClipboardPayload, tableFromClipboard } from './table'
@@ -90,10 +90,16 @@ describe('withRichBlocks', () => {
     const editor = withRichBlocks(createEditor() as never)
     editor.children = [{ type: 'paragraph', children: [{ text: 'before selected after' }] }]
     editor.selection = { anchor: { path: [0, 0], offset: 7 }, focus: { path: [0, 0], offset: 15 } }
-    for (const [mark, value] of [['bold', true], ['fontSize', 20], ['color', '#3370ff']] as const) {
+    for (const [mark, value] of [['bold', true], ['underline', true], ['strikethrough', true], ['fontSize', 20], ['color', '#3370ff']] as const) {
       toggleMark(editor, mark, value)
       expect(editor.selection && Editor.string(editor, editor.selection)).toBe('selected')
     }
+    // A selectionchange that only grows around the marked characters is the
+    // browser adopting a wider DOM range. A selection that moves elsewhere stays.
+    Transforms.select(editor, { anchor: { path: [0, 0], offset: 0 }, focus: { path: [0, 2], offset: 6 } })
+    expect(Editor.string(editor, editor.selection!)).toBe('selected')
+    Transforms.select(editor, { anchor: { path: [0, 0], offset: 0 }, focus: { path: [0, 0], offset: 6 } })
+    expect(Editor.string(editor, editor.selection!)).toBe('before')
   })
 
   it('keeps title, list and quote as composable paragraph properties', () => {
