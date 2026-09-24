@@ -300,8 +300,10 @@ export function LeafRenderer({ attributes, children, leaf }: { attributes: Recor
   let content = children
   if (leaf.bold) content = <strong>{content}</strong>
   if (leaf.italic) content = <em>{content}</em>
-  if (leaf.underline) content = <u>{content}</u>
-  if (leaf.strikethrough) content = <s>{content}</s>
+  // <u> and <s> are native editing elements. Once a block has several leaves,
+  // Chrome expands a selection that touches their boundary. Spans do not.
+  if (leaf.underline) content = <span style={{ textDecoration: 'underline' }}>{content}</span>
+  if (leaf.strikethrough) content = <span style={{ textDecoration: 'line-through' }}>{content}</span>
   if (leaf.code) content = <code className="sk-inline-code">{content}</code>
   if (leaf.commentId) content = <span className={`sk-comment-anchor ${leaf.commentActive ? 'is-active' : ''}`} data-comment-id={String(leaf.commentId)}>{content}</span>
   if (leaf.remoteSessionId) content = <span className={`sk-remote-selection ${leaf.remoteCollapsed ? 'is-caret' : ''}`} data-session-id={String(leaf.remoteSessionId)} data-name={leaf.remoteName ? String(leaf.remoteName) : undefined} title={leaf.remoteName ? String(leaf.remoteName) : undefined} style={{ '--sk-remote-color': String(leaf.remoteColor || '#3370ff') } as CSSProperties}>{content}</span>
