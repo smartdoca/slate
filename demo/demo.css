@@ -1,0 +1,18 @@
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; }
+body { background: #f5f6f8; color: #1f2329; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+.demo-header { position: sticky; z-index: 20; top: 0; height: 58px; padding: 0 24px; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,.92); border-bottom: 1px solid #e5e6eb; backdrop-filter: blur(12px); }
+.demo-logo { width: 32px; height: 32px; display: grid; place-items: center; color: white; font-weight: 800; background: #3370ff; border-radius: 9px; }
+.demo-header > div:nth-child(2) { display: flex; flex-direction: column; line-height: 1.2; }
+.demo-header span { color: #8f959e; font-size: 11px; margin-top: 3px; }
+.demo-header .demo-status { margin-left: auto; display: flex; flex-direction: row; align-items: center; gap: 7px; color: #8f959e; font-size: 13px; }
+.demo-status i { width: 7px; height: 7px; background: #34c724; border-radius: 50%; }
+.demo-header > button { border: 0; border-radius: 7px; padding: 8px 17px; color: white; background: #3370ff; font-weight: 600; }
+.demo-performance-panel { position: fixed; z-index: 40; right: 16px; bottom: 16px; width: 230px; padding: 13px 15px; display: grid; gap: 5px; color: #646a73; background: rgba(255,255,255,.96); border: 1px solid #dee0e3; border-radius: 10px; box-shadow: 0 10px 32px rgba(31,35,41,.14); font-size: 12px; backdrop-filter: blur(10px); }.demo-performance-panel b { margin-bottom: 3px; color: #1f2329; font-size: 14px; }
+.demo-performance-panel button { margin-top: 3px; padding: 6px 8px; color: #245bdb; background: #edf3ff; border: 1px solid #c6d7ff; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.demo-sdk-toolbar { position: sticky; top: 0; z-index: 40; display: flex; gap: 6px; padding: 10px 24px; border-bottom: 1px solid #e7e9ee; background: rgba(255,255,255,.96); }
+.demo-sdk-toolbar button { padding: 7px 11px; border: 1px solid #d9dde7; border-radius: 7px; background: white; cursor: pointer; }
+.demo-editor-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); max-width: 1440px; margin: 0 auto; }
+.demo-external-outline { position: sticky; top: 58px; align-self: start; display: flex; flex-direction: column; gap: 3px; padding: 24px 12px; }
+.demo-external-outline button { border: 0; background: none; text-align: left; padding-block: 6px; color: #5c6473; cursor: pointer; }
+@media (max-width: 900px) { .demo-editor-layout { display: block; } .demo-external-outline { display: none; } }

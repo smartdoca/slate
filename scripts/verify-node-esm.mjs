@@ -1,0 +1,8 @@
+const main = await import('../dist/index.js')
+const codec = await import('../dist/codec.js')
+const conversion = await import('../dist/conversion.js')
+if (typeof main.createAtomicInlineExtension !== 'function') throw new Error('Main ESM entry did not load')
+if (typeof codec.createAtomicInlineCodec !== 'function') throw new Error('Pure codec ESM entry did not load')
+if (typeof conversion.importDocument !== 'function' || typeof conversion.exportDocument !== 'function') throw new Error('Conversion ESM entry did not load')
+if (codec.YJS_CODEC !== 'slate-kit' || codec.YJS_SCHEMA_VERSION !== 3) throw new Error('Unexpected codec contract')
+console.log('Node ESM imports passed: main, codec, conversion')
