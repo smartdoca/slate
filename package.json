@@ -1,6 +1,6 @@
 {
   "name": "slatetsx-kit-editor",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "A Feishu-inspired, extensible rich text editor built with Slate and TypeScript.",
   "type": "module",
   "main": "./dist/index.cjs",

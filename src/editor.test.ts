@@ -88,15 +88,15 @@ describe('withRichBlocks', () => {
 
   it('keeps the same partial text selected across consecutive mark changes', () => {
     const editor = withRichBlocks(createEditor() as never)
-    editor.children = [{ type: 'paragraph', children: [{ text: 'before selected after' }] }]
+    editor.children = [{ id: 'p', type: 'paragraph', children: [{ text: 'before selected after' }] }]
     editor.selection = { anchor: { path: [0, 0], offset: 7 }, focus: { path: [0, 0], offset: 15 } }
     for (const [mark, value] of [['bold', true], ['underline', true], ['strikethrough', true], ['fontSize', 20], ['color', '#3370ff']] as const) {
       toggleMark(editor, mark, value)
       expect(editor.selection && Editor.string(editor, editor.selection)).toBe('selected')
     }
-    // A selectionchange that only grows around the marked characters is the
-    // browser adopting a wider DOM range. A selection that moves elsewhere stays.
-    Transforms.select(editor, { anchor: { path: [0, 0], offset: 0 }, focus: { path: [0, 2], offset: 6 } })
+    // slate-react writes the browser range onto editor.selection directly.
+    // A range that only grows around the marked characters is put back.
+    editor.selection = { anchor: { path: [0, 0], offset: 0 }, focus: { path: [0, 2], offset: 6 } }
     expect(Editor.string(editor, editor.selection!)).toBe('selected')
     Transforms.select(editor, { anchor: { path: [0, 0], offset: 0 }, focus: { path: [0, 0], offset: 6 } })
     expect(Editor.string(editor, editor.selection!)).toBe('before')
