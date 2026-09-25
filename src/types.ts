@@ -252,6 +252,11 @@ export interface RichTextEditorProps {
   resources?: ResourceConfig
   comments?: EditorComments
   formulaRenderer?: import('./formula').FormulaRenderer
+  /** Interface language. `zh` and omitted both show Chinese. Any other code shows English. */
+  locale?: string
+  /** Replaces individual dictionary keys. Does not replace the whole catalog. */
+  messages?: Record<string, string>
+  /** Full dictionary. When set, it replaces the catalog selected by `locale`. */
   language?: EditorLanguagePack
   onOutlineChange?: (headings: DocumentHeading[]) => void
   onReady?: (handle: RichTextEditorHandle) => void

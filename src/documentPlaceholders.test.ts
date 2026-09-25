@@ -21,6 +21,27 @@ it('shows independent title/body hints without persisting them, hides hints in r
   } finally { await act(async () => root.unmount()); host.remove() }
 })
 
+it('switches locale copy without replacing the editor document', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
+  const host = document.createElement('div'); document.body.append(host); const root = createRoot(host)
+  const ref = createRef<RichTextEditorHandle>()
+  const hints = () => [...host.querySelectorAll('[data-placeholder]')].map(el => el.getAttribute('data-placeholder'))
+  try {
+    await act(async () => root.render(createElement(RichTextEditor, { ref, initialValue: [], firstLineTitle: true })))
+    const editor = ref.current!.editor
+    expect(host.querySelector('.sk-editor')?.getAttribute('lang')).toBe('zh-CN')
+    expect(hints()).toEqual(['请输入标题', '请输入正文'])
+    await act(async () => root.render(createElement(RichTextEditor, { ref, locale: 'en', initialValue: [], firstLineTitle: true })))
+    expect(ref.current!.editor).toBe(editor)
+    expect(host.querySelector('.sk-editor')?.getAttribute('lang')).toBe('en')
+    expect(hints()).toEqual(['Enter a title', 'Start writing'])
+    await act(async () => root.render(createElement(RichTextEditor, { ref, locale: 'ja', messages: { 'document.titlePlaceholder': '題名' }, initialValue: [], firstLineTitle: true })))
+    expect(ref.current!.editor).toBe(editor)
+    expect(hints()[0]).toBe('題名')
+    expect(hints()[1]).toBe('Start writing')
+  } finally { await act(async () => root.unmount()); host.remove() }
+})
+
 it('moves the body hint with the first body line without leaving stale hints behind', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
   const host = document.createElement('div'); document.body.append(host); const root = createRoot(host)
