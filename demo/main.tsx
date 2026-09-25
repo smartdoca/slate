@@ -49,6 +49,7 @@ function App() {
   const editorRef = useRef<RichTextEditorHandle>(null)
   const [outline, setOutline] = useState<DocumentHeading[]>([])
   const [mode, setMode] = useState<'edit' | 'readonly'>('edit')
+  const [locale, setLocale] = useState('zh')
   const [initialValue] = useState<EditorValue | undefined>(() => {
     const params = new URLSearchParams(location.search)
     if (params.has('empty')) return []
@@ -64,9 +65,10 @@ function App() {
       <button onClick={() => editorRef.current?.commands.toggleMark('bold')}>加粗</button><button onClick={() => editorRef.current?.commands.toggleMark('underline')}>下划线</button>
       <button onClick={() => editorRef.current?.commands.insertTable(3, 3)}>表格</button><button onClick={() => pick(MEDIA_FILE_ACCEPT, file => void editorRef.current?.commands.uploadMedia(file))}>图片/视频</button>
       <button onClick={() => pick('*/*', file => void editorRef.current?.commands.uploadAttachment(file))}>附件</button><button onClick={() => setMode(current => current === 'edit' ? 'readonly' : 'edit')}>{mode === 'edit' ? '只读' : '编辑'}</button>
+      <button onClick={() => setLocale(current => current === 'zh' ? 'en' : 'zh')}>{locale === 'zh' ? 'English' : '中文'}</button>
     </div>
     <div className="demo-editor-layout"><aside className="demo-external-outline"><b>目录（业务侧）</b>{outline.map(item => <button key={item.id} style={{ paddingLeft: 10 + item.level * 12 }} onClick={() => editorRef.current?.scrollToBlock(item.id)}>{item.text}</button>)}</aside>
-      <RichTextEditor formulaRenderer={renderKatex} firstLineTitle titlePlaceholder="请输入标题" bodyPlaceholder="请输入正文" ref={editorRef} mode={mode} resources={resources} autoFocus onOutlineChange={setOutline} onChange={value => {
+      <RichTextEditor formulaRenderer={renderKatex} firstLineTitle locale={locale} ref={editorRef} mode={mode} resources={resources} autoFocus onOutlineChange={setOutline} onChange={value => {
         if (!editorRef.current?.editor.operations.some(operation => operation.type !== 'set_selection')) return
         const params = new URLSearchParams(location.search)
         if (!params.has('empty')) localStorage.setItem(params.has('title') ? 'slate-kit-title-demo' : 'slate-kit-demo-v8', JSON.stringify(value))

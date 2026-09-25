@@ -25,14 +25,14 @@ const EDITOR_WIDTH = 1180
 const EDITOR_HEIGHT = 700
 const MIND_PREVIEW_VERSION = 5
 
-const textOf = (topic: unknown) => typeof topic === 'string' ? topic : String(topic || '新主题')
+const textOf = (topic: unknown, fallback: string) => typeof topic === 'string' ? topic : String(topic || fallback)
 const cloneMind = (node: MindNode): MindNode => ({ ...node, children: (node.children || []).map(cloneMind) })
-const normalizeMind = (node: Partial<MindNode>, root = false): MindNode => ({
+const normalizeMind = (node: Partial<MindNode>, root = false, labels = { root: '中心主题', child: '新主题' }): MindNode => ({
   ...node,
   id: node.id || createId(),
-  topic: textOf(node.topic || (root ? '中心主题' : '新主题')),
+  topic: textOf(node.topic || (root ? labels.root : labels.child), labels.child),
   expanded: node.expanded !== false,
-  children: (node.children || []).map(child => normalizeMind(child, false)),
+  children: (node.children || []).map(child => normalizeMind(child, false, labels)),
 }) as MindNode
 
 const walkMind = (node: MindNode, visit: (item: MindNode, parent: MindNode | null, depth: number) => void, parent: MindNode | null = null, depth = 0) => {
@@ -122,7 +122,8 @@ function MindMapEditor({ data, close, commit }: { data: MindMapData; close(): vo
   const { t } = useEditorI18n()
   const canvasRef = useRef<HTMLDivElement>(null)
   const graphRef = useRef<Graph | null>(null)
-  const rootRef = useRef(normalizeMind(structuredClone(data.nodeData), true))
+  const topicLabels = { root: t('ui.centralTopic'), child: t('ui.newTopic') }
+  const rootRef = useRef(normalizeMind(structuredClone(data.nodeData), true, topicLabels))
   const selectionRef = useRef(rootRef.current.id)
   const [selectedId, setSelectedId] = useState(rootRef.current.id)
   const [quick, setQuick] = useState({ left: 0, top: 0 })
@@ -264,7 +265,7 @@ function MindMapEditor({ data, close, commit }: { data: MindMapData; close(): vo
     event.stopPropagation(); if (editing) return
     const raw = event.clipboardData.getData('application/x-slate-kit-mindmap+json')
     const plain = event.clipboardData.getData('text/plain')
-    const source = raw ? parseMindClipboard(raw) : plain.trim() ? normalizeMind({ topic: plain.slice(0, 100000) }) : null
+    const source = raw ? parseMindClipboard(raw) : plain.trim() ? normalizeMind({ topic: plain.slice(0, 100000) }, false, topicLabels) : null
     if (source) { event.preventDefault(); paste(source) }
   }} onKeyDown={event => {
     event.stopPropagation()
@@ -317,14 +318,15 @@ export function MindMapBlock({ element }: { element: MindMapElement }) {
   const { t } = useEditorI18n()
 
   const readOnly = useReadOnly(); const editor = useSlateStatic(); const selected = useSelected(); const focused = useFocused(); const [open, setOpen] = useState(false); const [viewing, setViewing] = useState(false); const [downloadMenu, setDownloadMenu] = useState<{ x: number; y: number } | null>(null); const resizeStart = useRef({ x: 0, width: 0 }); const [resizing, setResizing] = useState(false)
-  const data = useMemo(() => ({ ...structuredClone(element.mindData!), nodeData: normalizeMind(structuredClone(element.mindData!.nodeData) as MindNode, true) }), [element.mindData])
+  const topicLabels = { root: t('ui.centralTopic'), child: t('ui.newTopic') }
+  const data = useMemo(() => ({ ...structuredClone(element.mindData!), nodeData: normalizeMind(structuredClone(element.mindData!.nodeData) as MindNode, true, topicLabels) }), [element.mindData, topicLabels.root, topicLabels.child])
   const [previewSvg, setPreviewSvg] = useState(element.previewVersion === MIND_PREVIEW_VERSION ? element.previewSvg || '' : ''); const [contentSize, setContentSize] = useState({ width: element.contentWidth || 680, height: element.contentHeight || 360 })
   const width = element.width || Math.min(680, contentSize.width); const aspectRatio = contentSize.width / Math.max(1, contentSize.height)
   useEffect(() => {
     if (element.previewSvg && element.previewVersion === MIND_PREVIEW_VERSION) { setPreviewSvg(element.previewSvg); setContentSize({ width: element.contentWidth || 680, height: element.contentHeight || 360 }); return }
     const host = document.createElement('div'); host.style.cssText = `position:fixed;left:-12000px;top:-12000px;width:${EDITOR_WIDTH}px;height:${EDITOR_HEIGHT}px`; document.body.appendChild(host)
     const graph = new Graph({ container: host, width: EDITOR_WIDTH, height: EDITOR_HEIGHT, async: false, background: { color: '#fff' } }); graph.use(new Export())
-    const root = normalizeMind(structuredClone(data.nodeData) as MindNode, true); renderMindGraph(graph, root)
+    const root = normalizeMind(structuredClone(data.nodeData) as MindNode, true, topicLabels); renderMindGraph(graph, root)
     let disposed = false; requestAnimationFrame(() => requestAnimationFrame(async () => { if (disposed) return; const result = await exportGraphSvg(graph); if (!disposed) { setPreviewSvg(result.svg); setContentSize(result.size) } }))
     return () => { disposed = true; graph.dispose(); host.remove() }
   }, [data, element.previewSvg, element.previewVersion, element.contentWidth, element.contentHeight])

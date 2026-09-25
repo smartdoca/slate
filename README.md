@@ -198,7 +198,9 @@ const [value, setValue] = useState<EditorValue>(initialDocument.children);
 | `className` | `string` / `''` | 根容器附加类名 |
 | `largeDocumentThreshold` | `number \| false` / `300` | 大文档渲染优化阈值；不是加载分页，`false` 关闭 |
 | `resources` | `ResourceConfig` | 上传与地址解析，见下文 |
-| `language` | `EditorLanguagePack` / `zhCN` | 文案映射 |
+| `locale` | `string` / `'zh'` | 界面语言。`zh` 与缺省为中文，其他代码为英文。切换只更新按钮、菜单和提示，不重建文档 |
+| `messages` | `Record<string, string>` | 覆盖个别文案 key，其余仍用内置译文 |
+| `language` | `EditorLanguagePack` | 整本字典。传入后替换 `locale` 选出的目录 |
 | `plugins` | `EditorPlugin[]` / `[]` | 保持引用稳定，变化会重建 editor |
 | `collaboration` | `CollaborationAdapter` | 推荐通过 `createYjsAdapter` 生成并保持稳定 |
 | `onOutlineChange` | `(headings: DocumentHeading[]) => void` | 输出目录数据；可能重复返回相同内容 |
@@ -386,18 +388,22 @@ export const resources: ResourceConfig = {
 import { RichTextEditor, type EditorLanguagePack } from 'slatetsx-kit-editor'
 import { zhCN, enUS } from 'slatetsx-kit-editor/languages'
 
+export const ChineseEditor = () => <RichTextEditor locale="zh" />
+export const EnglishEditor = () => <RichTextEditor locale="en" />
+export const OverriddenEditor = () => <RichTextEditor locale="en" messages={{ cancel: 'Stop' }} />
+
 const french: EditorLanguagePack = {
   ...enUS,
   placeholder: 'Écrivez ici…',
   cancel: 'Annuler',
   'resource.downloadFile': 'Télécharger {0}',
 }
-// 直接替换 language 即可切换，不需要注册语言名称。
-export const EnglishEditor = () => <RichTextEditor language={enUS} />
 export const FrenchEditor = () => <RichTextEditor language={french} />
 ```
 
-语言包类型为 `Readonly<Record<string, string>>`；可复制预设字典作为完整模板。字典只使用稳定英文标识（如 `cancel`、`resource.downloadFile`），不使用中文原文作为 key，参数使用 `{0}`、`{1}`。缺失键回退到键本身，不是自动回退到中文；展开 `enUS` 可提供英文回退。自定义组件内使用 `useEditorI18n().t(key, parameters)`。语言切换只影响界面，不翻译文档内容或业务外部工具栏。
+宿主传入 `locale`。当前内置 `zh` 和 `en`；缺省为中文，不认识的代码按英文显示。子包不读取页面状态、`localStorage` 或浏览器语言。`messages` 只替换对应 key。需要整本自定义字典时仍传 `language`，它会替换 `locale` 选出的目录。
+
+语言包类型为 `Readonly<Record<string, string>>`。字典 key 使用稳定英文标识（如 `toolbar.bold`、`resource.downloadFile`），不用中文或整句英文。占位符写成 `{name}`，已有文案里的 `{0}`、`{1}` 继续可用。需要区分数量时写 `files.count.one` 和 `files.count.other`，调用传入 `count`。缺失译文先用英文，再退回 key 本身。自定义组件内使用 `useEditorI18n().t(key, parameters)`。切换 `locale` 只更新按钮、菜单、占位符和提示，不重建文档、协同适配器或插件列表，也不翻译用户写进文档的文字。
 
 自定义 key 建议使用 `模块.操作` 的英文 camelCase 命名，例如 `resource.downloadFile`；显示文案修改时不改 key。此版本已移除中文 key，不保留旧别名；已有自定义字典请按预设字典更新。`{0}` 等插值占位符保持不变，例如 `t('resource.downloadFile', { 0: 'report.pdf' })`。这只调整界面语言包，不迁移或改写已保存的中文文档内容。
 

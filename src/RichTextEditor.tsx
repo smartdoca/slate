@@ -15,7 +15,7 @@ import { parseTableClipboard, tableFromClipboard } from './table'
 import { BlockSelectionProvider, type BlockSelectMode } from './blockSelection'
 import { BLOCK_CLIPBOARD_MIME, cloneBlocksWithFreshIds, createBlockClipboardPayload, getClipboardFiles, parseBlockClipboard } from './clipboard'
 import type { EditorValue, RemoteEditorSelection, RichElement, RichTextEditorHandle, RichTextEditorProps } from './types'
-import { EditorI18nProvider, zhCN } from './i18n'
+import { EditorI18nProvider, composeEditorLanguage, editorHtmlLang } from './i18n'
 import { ResourceProvider, type ResourceRuntime } from './resources'
 import { createEditorCommands, createEditorQuery } from './api'
 import { getDocumentOutline } from './outline'
@@ -29,7 +29,8 @@ import { FormulaContext } from './formula'
 
 const ATOMIC_COPY_TYPES = new Set<RichElement['type']>(['columns', 'formula', 'table', 'image', 'video', 'flowchart', 'mindmap', 'attachment', 'card', 'code-block', 'divider'])
 
-export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor({ insertMenu, ariaLabel, initialValue = defaultValue, value, onChange, placeholder, titlePlaceholder, bodyPlaceholder, mode = 'edit', autoFocus = false, className = '', largeDocumentThreshold = 300, collaboration, resources, comments, formulaRenderer, firstLineTitle = false, language = zhCN, onOutlineChange, onReady, onUploadStateChange, plugins = EMPTY_PLUGINS }, forwardedRef) {
+export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor({ insertMenu, ariaLabel, initialValue = defaultValue, value, onChange, placeholder, titlePlaceholder, bodyPlaceholder, mode = 'edit', autoFocus = false, className = '', largeDocumentThreshold = 300, collaboration, resources, comments, formulaRenderer, firstLineTitle = false, locale, messages, language, onOutlineChange, onReady, onUploadStateChange, plugins = EMPTY_PLUGINS }, forwardedRef) {
+  const uiLanguage = useMemo(() => composeEditorLanguage({ locale, language, messages }), [locale, language, messages])
   const firstLineTitleRef = useRef(firstLineTitle)
   firstLineTitleRef.current = firstLineTitle
   const editor = useMemo(() => {
@@ -54,8 +55,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   const selectAllRequested = useRef(false)
   const applyingRemote = useRef(false)
   const renderElement = useCallback((props: RenderElementProps) => {
-    return plugins.map(plugin => plugin.renderElement?.(props)).find(Boolean) ?? <FormulaContext.Provider value={formulaRenderer}><ElementRenderer {...props} documentPlaceholders={firstLineTitle && !isReadOnly ? { title: titlePlaceholder ?? language['document.titlePlaceholder'] ?? '请输入标题', body: bodyPlaceholder ?? placeholder ?? language['document.bodyPlaceholder'] ?? '请输入正文' } : undefined} /></FormulaContext.Provider>
-  }, [plugins, formulaRenderer, firstLineTitle, isReadOnly, titlePlaceholder, bodyPlaceholder, placeholder, language, editor])
+    return plugins.map(plugin => plugin.renderElement?.(props)).find(Boolean) ?? <FormulaContext.Provider value={formulaRenderer}><ElementRenderer {...props} documentPlaceholders={firstLineTitle && !isReadOnly ? { title: titlePlaceholder ?? uiLanguage['document.titlePlaceholder'] ?? '请输入标题', body: bodyPlaceholder ?? placeholder ?? uiLanguage['document.bodyPlaceholder'] ?? '请输入正文' } : undefined} /></FormulaContext.Provider>
+  }, [plugins, formulaRenderer, firstLineTitle, isReadOnly, titlePlaceholder, bodyPlaceholder, placeholder, uiLanguage, editor])
   const renderLeaf = useCallback((props: RenderLeafProps) => plugins.map(plugin => plugin.renderLeaf?.(props)).find(Boolean) ?? <LeafRenderer {...props} />, [plugins])
 
   const replaceDocument = useCallback((next: EditorValue) => {
@@ -417,8 +418,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     const document = value ?? initialValue
     return ensureStableIds(structuredClone(document.length ? document : [{ type: 'paragraph', id: createId(), children: [{ text: '' }] }]))
   }, [])
-  const resolvedPlaceholder = placeholder || language.placeholder
-  return <InsertMenuContext.Provider value={insertMenu}><EditorI18nProvider language={language}><div className={`sk-editor ${isReadOnly ? 'is-readonly' : ''} ${largeDocument ? 'is-large-document' : ''} ${className}`} data-title-mode={firstLineTitle || undefined} data-revision={revision}>
+  const resolvedPlaceholder = placeholder || uiLanguage.placeholder
+  return <InsertMenuContext.Provider value={insertMenu}><EditorI18nProvider language={uiLanguage}><div lang={editorHtmlLang(locale, language)} className={`sk-editor ${isReadOnly ? 'is-readonly' : ''} ${largeDocument ? 'is-large-document' : ''} ${className}`} data-title-mode={firstLineTitle || undefined} data-revision={revision}>
     <Slate editor={editor} initialValue={initialDocument} onChange={handleChange}>
       <ResourceProvider editor={editor} config={resourceConfig} readOnly={isReadOnly} onStateChange={onUploadStateChange} runtimeRef={resourceRuntime}>
       <BlockSelectionProvider value={blockSelection}>
