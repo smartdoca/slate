@@ -105,6 +105,32 @@ describe('shared table commands and Yjs convergence', () => {
     await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
     expect(editor.children).toEqual(a.getValue()); disconnect()
   })
+  it('keeps the selected text when a remote mark splits its Slate leaf', async () => {
+    const initial = [{ id: 'paragraph', type: 'paragraph', children: [{ text: 'before selected after' }] }] as const
+    const a = new YjsDocument(new Y.Doc()); a.initialize(structuredClone(initial) as never)
+    const b = new YjsDocument(new Y.Doc()); Y.applyUpdate(b.doc, Y.encodeStateAsUpdate(a.doc))
+    const editor = withRichBlocks(withHistory(createEditor())); const disconnect = createYjsAdapter(a).connect!(editor) as () => void
+    let localWrites = 0; const stopLocal = a.onLocalUpdate(() => localWrites++)
+    await Promise.resolve()
+    Transforms.select(editor, { anchor: { path: [0, 0], offset: 7 }, focus: { path: [0, 0], offset: 15 } })
+    const before = b.getValue(); const after = structuredClone(before)
+    ;(after[0] as RichElement).children = [{ text: 'before ' }, { text: 'selected', underline: true }, { text: ' after' }]
+    b.acceptEditorValue(before, after); a.applyRemoteUpdate(Y.encodeStateAsUpdate(b.doc))
+    expect(editor.selection && Editor.string(editor, editor.selection)).toBe('selected')
+    expect(localWrites).toBe(0)
+    stopLocal(); disconnect(); a.destroy(); b.destroy(); a.doc.destroy(); b.doc.destroy()
+  })
+  it('tracks the selected text through a remote insertion before it', async () => {
+    const initial = [{ id: 'paragraph', type: 'paragraph', children: [{ text: 'before selected after' }] }] as const
+    const a = new YjsDocument(new Y.Doc()); a.initialize(structuredClone(initial) as never)
+    const b = new YjsDocument(new Y.Doc()); Y.applyUpdate(b.doc, Y.encodeStateAsUpdate(a.doc))
+    const editor = withRichBlocks(withHistory(createEditor())); const disconnect = createYjsAdapter(a).connect!(editor) as () => void
+    await Promise.resolve()
+    Transforms.select(editor, { anchor: { path: [0, 0], offset: 7 }, focus: { path: [0, 0], offset: 15 } })
+    b.editText('paragraph', 0, 0, 'remote '); a.applyRemoteUpdate(Y.encodeStateAsUpdate(b.doc))
+    expect(editor.selection && Editor.string(editor, editor.selection)).toBe('selected')
+    disconnect(); a.destroy(); b.destroy(); a.doc.destroy(); b.doc.destroy()
+  })
   it('splits geometry without restoring source cells or discarding new anchor blocks', () => {
     const { table } = setup()
     const merged = reduceTableCommand(table, { type: 'merge', tableId: table.id, rowIds: [table.children[0].id], columnIds: table.columns.slice(0, 2).map(c => c.id) })!

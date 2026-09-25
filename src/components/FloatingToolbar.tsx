@@ -90,8 +90,12 @@ export function FloatingToolbar() {
   }, [editor])
   const keepSelection = (event: ReactMouseEvent) => { positionLocked.current = true; if (!(event.target as HTMLElement).closest('input')) event.preventDefault() }
   const restoreSelection = () => {
+    if (editor.selection && Range.isExpanded(editor.selection)) {
+      savedSelection.current = cloneRange(editor.selection)
+      return
+    }
     const saved = savedSelection.current
-    if (saved && (!editor.selection || !Range.equals(editor.selection, saved))) Transforms.select(editor, saved)
+    if (saved) Transforms.select(editor, saved)
   }
   const rememberSelection = () => { if (editor.selection && Range.isExpanded(editor.selection)) savedSelection.current = cloneRange(editor.selection) }
   const applyMark = (key: keyof Omit<RichText, 'text'>, value?: string | number | boolean) => {

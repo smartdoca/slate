@@ -1,6 +1,6 @@
 import * as Y from 'yjs'
 import { assertDocumentLayouts, columnsExecutors, reduceColumnsCommand, type ColumnsCommand } from './columns'
-import { Editor, Element, Node, Range, Text } from 'slate'
+import { Editor, Element, Node, Range, Text, Transforms } from 'slate'
 import { HistoryEditor } from 'slate-history'
 import { createId, assertUniqueIds } from './ids'
 import { ensureStableIds } from './schema'
@@ -496,14 +496,40 @@ export function createYjsAdapter(runtime: YjsDocument, options: YjsAdapterOption
       current.undo = () => runtime.undo(); current.redo = () => runtime.redo()
       collaborationHistory.set(current, { canUndo: () => runtime.undoManager.canUndo(), canRedo: () => runtime.undoManager.canRedo() })
       let pending = false; let disposed = false
+      let remoteSelection: RelativeTextSelection | null | undefined
+      const retainRemoteSelection = (transaction: Y.Transaction) => {
+        if (transaction.origin === runtime.remoteOrigin && remoteSelection === undefined)
+          remoteSelection = runtime.captureTextSelection(current)
+      }
+      const releaseNoopRemoteSelection = (transaction: Y.Transaction) => {
+        if (transaction.origin === runtime.remoteOrigin && transaction.changed.size === 0)
+          remoteSelection = undefined
+      }
+      runtime.doc.on('beforeTransaction', retainRemoteSelection)
+      runtime.doc.on('afterTransaction', releaseNoopRemoteSelection)
       const schedule = () => { if (pending || disposed) return; pending = true; queueMicrotask(() => { pending = false; project() }) }
-      const project = (transaction?: Y.Transaction) => { if (disposed || (acceptingLocal && transaction?.origin === runtime.origin)) return; if (composing) { deferredProjection = true; return }; if (projecting) { schedule(); return }; projecting = true; try { const value = runtime.getValue(); HistoryEditor.withoutSaving(current, () => applyDocumentProjection(current, value)); previous = current.children } finally { queueMicrotask(() => { projecting = false }) } }
+      const project = (transaction?: Y.Transaction) => {
+        if (disposed || (acceptingLocal && transaction?.origin === runtime.origin)) return
+        if (composing) { deferredProjection = true; return }
+        if (projecting) { schedule(); return }
+        projecting = true
+        try {
+          const value = runtime.getValue()
+          HistoryEditor.withoutSaving(current, () => applyDocumentProjection(current, value))
+          if (!pending && remoteSelection) {
+            const resolved = runtime.resolveTextSelection(current, remoteSelection)
+            if (resolved) Transforms.select(current, resolved)
+          }
+          if (!pending) remoteSelection = undefined
+          previous = current.children
+        } finally { queueMicrotask(() => { projecting = false }) }
+      }
       flushProjection = project
       project()
       const unsubscribe = runtime.subscribe(project)
       tableCommandExecutors.set(current, command => { runtime.execute(command) })
       columnsExecutors.set(current, command => { runtime.execute(command) })
-      return () => { disposed = true; unsubscribe(); columnsExecutors.delete(current); tableCommandExecutors.delete(current); collaborationHistory.delete(current); current.undo = originalUndo; current.redo = originalRedo; editor = undefined }
+      return () => { disposed = true; runtime.doc.off('beforeTransaction', retainRemoteSelection); runtime.doc.off('afterTransaction', releaseNoopRemoteSelection); unsubscribe(); columnsExecutors.delete(current); tableCommandExecutors.delete(current); collaborationHistory.delete(current); current.undo = originalUndo; current.redo = originalRedo; editor = undefined }
     },
     onLocalChange(value, operations) {
       if (!editor || projecting) return
