@@ -1,5 +1,5 @@
 {
-  "name": "slatetsx-kit-editor",
+  "name": "@smartdoca/slate",
   "version": "0.4.9",
   "description": "A Feishu-inspired, extensible rich text editor built with Slate and TypeScript.",
   "type": "module",
@@ -48,7 +48,8 @@
     "dist",
     "README.md",
     "docs",
-    "test-fixtures/conversion"
+    "test-fixtures/conversion",
+    "LICENSE"
   ],
   "sideEffects": [
     "*.css"
@@ -121,5 +122,12 @@
     "react",
     "typescript"
   ],
-  "license": "MIT"
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smartdoca/slate.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }
