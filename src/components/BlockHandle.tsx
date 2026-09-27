@@ -19,7 +19,7 @@ import { InsertSubmenu } from './InsertSubmenu'
 import { TablePickerPopover } from './TablePickerPopover'
 import { useResourceRuntime } from '../resources'
 
-const TEXT_TYPES = new Set(['paragraph', 'heading-one', 'heading-two', 'heading-three', 'heading-four', 'heading-five', 'block-quote', 'todo', 'list-item'])
+const TEXT_TYPES = new Set(['paragraph'])
 const HOVER_REVEAL_MS = 320
 const EMPTY_PARAGRAPH = () => ({ type: 'paragraph' as const, id: createId(), children: [{ text: '' }] })
 
@@ -92,7 +92,7 @@ export function BlockFrame({ element, children, attributes }: { element: RichEle
     if (type in titles) { const value = titles[type as keyof typeof titles]; setTextProperty('title', value, activeTitle === value) }
     else if (type === 'todo') { if (activeList === 'checkbox') Transforms.unsetNodes(editor, ['list', 'checked', 'listOrder'], { at: path() }); else { Transforms.unsetNodes(editor, 'listOrder', { at: path() }); Transforms.setNodes(editor, { type: 'paragraph', list: 'checkbox', checked: false } as Partial<RichElement>, { at: path() }) } }
     else if (type === 'block-quote') {
-      const active = Boolean(property?.quote || element.type === 'block-quote')
+      const active = Boolean(property?.quote)
       if (active) Transforms.unsetNodes(editor, 'quote', { at: path() })
       else Transforms.setNodes(editor, { type: 'paragraph', quote: true } as Partial<RichElement>, { at: path() })
     }
@@ -123,9 +123,9 @@ export function BlockFrame({ element, children, attributes }: { element: RichEle
   const isText = TEXT_TYPES.has(element.type)
   const isEmpty = isText && SlateNode.string(element).trim().length === 0
   const property = element.type === 'paragraph' ? element : undefined
-  const activeTitle = property?.title ?? ({ 'heading-one': 'h1', 'heading-two': 'h2', 'heading-three': 'h3', 'heading-four': 'h4', 'heading-five': 'h5' } as Record<string, string>)[element.type]
-  const activeList = property?.list ?? (element.type === 'bulleted-list' ? 'ul' : element.type === 'numbered-list' ? 'ol' : element.type === 'todo' ? 'checkbox' : undefined)
-  const isListBlock = Boolean(activeList || element.type === 'list-item')
+  const activeTitle = property?.title
+  const activeList = property?.list
+  const isListBlock = Boolean(activeList)
   const updateMenuPosition = useCallback(() => {
     const trigger = gripRef.current; if (!trigger) return
     const rect = trigger.getBoundingClientRect(); const menuWidth = menuRef.current?.offsetWidth || 236; const menuHeight = menuRef.current?.offsetHeight || 390
@@ -158,7 +158,7 @@ export function BlockFrame({ element, children, attributes }: { element: RichEle
         <button className={activeList === 'ul' ? 'is-active' : ''} title={t("ui.bulletedList")} onMouseDown={e => { e.preventDefault(); transformList('bulleted-list') }}><List size={16} /></button>
         <button className={activeList === 'ol' ? 'is-active' : ''} title={t("ui.numberedList")} onMouseDown={e => { e.preventDefault(); transformList('numbered-list') }}><ListOrdered size={16} /></button>
         <button className={activeList === 'checkbox' ? 'is-active' : ''} title={t("ui.toDo")} onMouseDown={e => { e.preventDefault(); transform('todo') }}><BlockTypeIcon type="todo" size={16} /></button>
-        <button className={property?.quote || element.type === 'block-quote' ? 'is-active' : ''} title={t("ui.quote")} onMouseDown={e => { e.preventDefault(); transform('block-quote') }}><Quote size={16} /></button>
+        <button className={property?.quote ? 'is-active' : ''} title={t("ui.quote")} onMouseDown={e => { e.preventDefault(); transform('block-quote') }}><Quote size={16} /></button>
       </div>
       <div className="sk-block-menu-label sk-property-label">{t("ui.alignment")}</div><div className="sk-quick-grid sk-align-grid">
         <button className={!element.align || element.align === 'left' ? 'is-active' : ''} title={t("ui.alignLeft")} onMouseDown={e => { e.preventDefault(); align('left') }}><AlignLeft size={16} /></button>
@@ -265,7 +265,7 @@ export function BlockFrame({ element, children, attributes }: { element: RichEle
     if (!viewport || rect.right <= viewport.left || rect.left >= viewport.right) return
     const firstVisible = rect.left < viewport.left + 20
     placeCellGrip({ left: firstVisible ? viewport.left - 60 : rect.left - 36, top: rect.top })
-  }} onMouseLeave={hideCellGrip} data-block-id={element.id || (!isCellBlock ? blockId : undefined)} data-block-index={!isCellBlock ? currentTopPath[0] : undefined} className={`sk-block-frame sk-block-${element.type} ${activeTitle ? 'is-heading-block' : ''} ${(element.type === 'paragraph' && element.quote) || element.type === 'block-quote' ? 'is-quote-block' : ''} ${isListBlock ? 'is-list-block' : ''} ${isCellBlock ? 'is-cell-block' : ''} ${blockSelected ? 'is-block-selected' : ''} ${open ? 'is-menu-open' : ''} ${dropSide ? `is-drop-${dropSide}` : ''}`} style={{ textAlign: element.align }} onMouseDownCapture={event => {
+  }} onMouseLeave={hideCellGrip} data-block-id={element.id || (!isCellBlock ? blockId : undefined)} data-block-index={!isCellBlock ? currentTopPath[0] : undefined} className={`sk-block-frame sk-block-${element.type} ${activeTitle ? 'is-heading-block' : ''} ${element.type === 'paragraph' && element.quote ? 'is-quote-block' : ''} ${isListBlock ? 'is-list-block' : ''} ${isCellBlock ? 'is-cell-block' : ''} ${blockSelected ? 'is-block-selected' : ''} ${open ? 'is-menu-open' : ''} ${dropSide ? `is-drop-${dropSide}` : ''}`} style={{ textAlign: element.align }} onMouseDownCapture={event => {
     if (isNestedBlock || (event.target as HTMLElement).closest('.sk-block-gutter')) return
     const selectableMedia = new Set(['formula', 'image', 'video', 'flowchart', 'mindmap', 'attachment', 'divider']).has(element.type)
     if (event.shiftKey || event.metaKey || event.ctrlKey) { event.preventDefault(); selectFromEvent(event); return }

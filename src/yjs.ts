@@ -15,7 +15,7 @@ export { connectYjsTransport, YJS_PROTOCOL_VERSION } from './yjsTransport'
 export type { YjsTransport, YjsMessage, YjsTransportBinding, YjsTransportOptions, YjsTransportState, YjsConnectionState, YjsSaveState } from './yjsTransport'
 export { ATOMIC_INLINE_PLACEHOLDER, YJS_CODEC, YJS_SCHEMA_VERSION, createAtomicInlineCodec } from './codec'
 export type { AtomicInlinePayload, YjsDocumentOptions, YjsInlineCodec } from './codec'
-export type YjsTransactionKind = 'local' | 'undo-redo' | 'remote' | 'bootstrap' | 'migration'
+export type YjsTransactionKind = 'local' | 'undo-redo' | 'remote' | 'bootstrap'
 
 type BlockCommand =
   | { type: 'insertBlock'; parentId?: string; afterId?: string; block: RichElement }
@@ -113,7 +113,6 @@ export class YjsDocument {
   readonly origin = { kind: 'slate-kit', id: createId() }
   readonly remoteOrigin = { kind: 'slate-kit-remote', id: createId() }
   readonly bootstrapOrigin = { kind: 'slate-kit-bootstrap', id: createId() }
-  readonly migrationOrigin = { kind: 'slate-kit-migration', id: createId() }
   readonly inlineCodecs: readonly YjsInlineCodec[]
   private readonly codecs: ReadonlyMap<string, YjsInlineCodec>
   private readonly metadata: Y.Map<EditorValue>

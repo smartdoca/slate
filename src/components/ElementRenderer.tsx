@@ -45,7 +45,7 @@ import { MediaDownloadMenu, MediaLightbox } from './MediaLightbox'
 import { TableBlock, TableCell, TableRow } from './TableBlock'
 import { getParagraphListMarker, isNativeTextBoundaryBackspace, normalizeLinkUrl } from '../editor'
 import { getAttachmentPresentation, type AttachmentKind } from '../attachment'
-import type { AttachmentElement, CardElement, ImageElement, ParagraphElement, RichElement, TodoElement } from '../types'
+import type { AttachmentElement, CardElement, ImageElement, ParagraphElement, RichElement } from '../types'
 import { useResolvedResource, useResourceRuntime } from '../resources'
 import { useEditorI18n } from '../i18n'
 import { IMAGE_FILE_ACCEPT, isSelectedElement, shouldOpenMediaPreview } from '../media'
@@ -59,7 +59,7 @@ const CODE_LANGUAGES = [
   ['graphql', 'GraphQL'], ['docker', 'Dockerfile'],
 ] as const
 
-function Todo({ element, children }: { element: TodoElement | ParagraphElement; children: React.ReactNode }) {
+function Todo({ element, children }: { element: ParagraphElement; children: React.ReactNode }) {
   const editor = useSlateStatic()
   const readOnly = useReadOnly()
   return <div className="sk-todo"><button disabled={readOnly} contentEditable={false} className={element.checked ? 'is-checked' : ''} onMouseDown={e => { e.preventDefault(); if (!readOnly) Transforms.setNodes(editor, { checked: !element.checked }, { at: DOMEditor.findPath(editor, element) }) }}>{element.checked && <Check size={14} />}</button><span className={element.checked ? 'is-done' : ''}>{children}</span></div>
@@ -187,7 +187,7 @@ function AttachmentBlock({ element }: { element: AttachmentElement }) {
   const presentation = getAttachmentPresentation(element.name, element.mimeType)
   const icons: Record<AttachmentKind, typeof File> = { pdf: FileText, document: FileText, spreadsheet: FileSpreadsheet, presentation: Presentation, archive: FileArchive, image: FileImage, audio: FileAudio, video: FileVideo, code: FileCode2, text: FileText, file: File }
   const Icon = icons[presentation.kind]
-  const selectAttachment = (event: React.MouseEvent) => { event.preventDefault(); Transforms.select(editor, DOMEditor.findPath(editor, element)); DOMEditor.focus(editor) }
+  const selectAttachment = (event: React.MouseEvent) => { event.preventDefault(); Transforms.select(editor, DOMEditor.findPath(editor, element)) }
   return <div className={`sk-attachment is-${presentation.kind} ${selected ? 'is-selected' : ''}`} contentEditable={false} onMouseDown={selectAttachment}><span className="sk-attachment-icon"><Icon size={23} /><i>{presentation.extension}</i></span><div><b>{element.name}</b><small>{upload ? t("resource.uploadProgress", { 0: upload.status === 'uploading' ? t("uploading") : t("uploadFailed"), 1: Math.round(upload.progress * 100) }) : `${t(presentation.label)} · ${size}`}</small></div>{downloadUrl && !upload && <a className="sk-attachment-download" href={downloadUrl} download={element.name} aria-label={t("resource.downloadFile", { 0: element.name })} title={t("ui.downloadAttachment")} onMouseDown={event => event.stopPropagation()}><Download size={17} /></a>}</div>
 }
 
@@ -272,16 +272,6 @@ export function ElementRenderer(props: RenderElementProps & { placeholder?: stri
   switch (element.type) {
     case 'columns': body = <ColumnsBlock element={element}>{children}</ColumnsBlock>; break
     case 'paragraph': body = <ParagraphBlock element={element} placeholder={props.placeholder} documentPlaceholders={props.documentPlaceholders}>{children}</ParagraphBlock>; break
-    case 'heading-one': body = <h1>{children}</h1>; break
-    case 'heading-two': body = <h2>{children}</h2>; break
-    case 'heading-three': body = <h3>{children}</h3>; break
-    case 'heading-four': body = <h4>{children}</h4>; break
-    case 'heading-five': body = <h5>{children}</h5>; break
-    case 'block-quote': body = <blockquote>{children}</blockquote>; break
-    case 'bulleted-list': body = <ul>{children}</ul>; break
-    case 'numbered-list': body = <ol>{children}</ol>; break
-    case 'list-item': body = <li>{children}</li>; break
-    case 'todo': body = <Todo element={element}>{children}</Todo>; break
     case 'code-block': body = <CodeBlock element={element}>{children}</CodeBlock>; break
     case 'divider': body = <div className="sk-divider" contentEditable={false}><hr /></div>; break
     case 'image': body = <ImageBlock element={element} />; break

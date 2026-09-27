@@ -7,9 +7,8 @@ import { ensureStableIds } from './schema'
 import { tableCellAnchorAt, tableCellPresentationAt } from './table'
 import type { BlockType, ParagraphElement, RichEditor, RichElement, RichText } from './types'
 
-const LIST_TYPES: BlockType[] = ['numbered-list', 'bulleted-list']
 const VOIDS: BlockType[] = ['formula', 'image', 'video', 'divider', 'attachment', 'flowchart', 'mindmap']
-const TEXT_BLOCKS: BlockType[] = ['paragraph', 'heading-one', 'heading-two', 'heading-three', 'heading-four', 'heading-five', 'block-quote', 'list-item', 'todo']
+const TEXT_BLOCKS: BlockType[] = ['paragraph']
 const titleMap = { 'heading-one': 'h1', 'heading-two': 'h2', 'heading-three': 'h3', 'heading-four': 'h4', 'heading-five': 'h5' } as const
 const paragraphMatch = (node: unknown): node is ParagraphElement => Element.isElement(node) && node.type === 'paragraph'
 
@@ -475,17 +474,16 @@ export const toggleMark = (editor: RichEditor, format: keyof Omit<RichText, 'tex
 
 export const isBlockActive = (editor: RichEditor, format: BlockType) => Boolean(Editor.nodes(editor, { match: n => {
   if (!Element.isElement(n)) return false
-  if (format in titleMap) return n.type === format || (n.type === 'paragraph' && n.title === titleMap[format as keyof typeof titleMap])
-  if (format === 'bulleted-list') return n.type === format || (n.type === 'paragraph' && n.list === 'ul')
-  if (format === 'numbered-list') return n.type === format || (n.type === 'paragraph' && n.list === 'ol')
-  if (format === 'todo') return n.type === format || (n.type === 'paragraph' && n.list === 'checkbox')
-  if (format === 'block-quote') return n.type === format || (n.type === 'paragraph' && n.quote === true)
+  if (format in titleMap) return n.type === 'paragraph' && n.title === titleMap[format as keyof typeof titleMap]
+  if (format === 'bulleted-list') return n.type === 'paragraph' && n.list === 'ul'
+  if (format === 'numbered-list') return n.type === 'paragraph' && n.list === 'ol'
+  if (format === 'todo') return n.type === 'paragraph' && n.list === 'checkbox'
+  if (format === 'block-quote') return n.type === 'paragraph' && n.quote === true
   return n.type === format
 } }).next().value)
 
 export const toggleBlock = (editor: RichEditor, format: BlockType) => {
   const active = isBlockActive(editor, format)
-  Transforms.unwrapNodes(editor, { match: n => Element.isElement(n) && LIST_TYPES.includes(n.type), split: true })
   const match = (n: unknown) => Element.isElement(n) && TEXT_BLOCKS.includes(n.type)
   if (format === 'paragraph') {
     Transforms.unsetNodes(editor, ['title', 'list', 'quote', 'checked', 'listOrder'], { match })

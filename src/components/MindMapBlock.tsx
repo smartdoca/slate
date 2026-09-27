@@ -91,11 +91,11 @@ const renderMindGraph = (graph: Graph, root: MindNode, forceLayout = false) => {
       id: item.id, shape: 'rect', x: origin.x + (item.x || 0) - size.width / 2, y: origin.y + (item.y || 0) - size.height / 2,
       width: size.width, height: size.height, zIndex: 2,
       markup: [{ tagName: 'rect', selector: 'body' }, { tagName: 'line', selector: 'underline' }, { tagName: 'text', selector: 'label' }],
-      data: { topic: textOf(item.topic), root: rootNode, side: item.side || 'right', color, nodeStyle } satisfies MindNodeData,
+      data: { topic: textOf(item.topic, ''), root: rootNode, side: item.side || 'right', color, nodeStyle } satisfies MindNodeData,
       attrs: {
         body: { fill: plain ? 'transparent' : solid ? color : !item.style ? tint : '#fff', stroke: plain ? 'none' : color, strokeWidth: solid ? 0 : 1.5, rx: radius, ry: radius },
         underline: { x1: 0, y1: size.height - 2, x2: size.width, y2: size.height - 2, stroke: color, strokeWidth: 1.5, strokeLinecap: 'round', display: plain ? 'block' : 'none', pointerEvents: 'none' },
-        label: { text: textOf(item.topic), fill: solid ? '#fff' : '#344054', fontSize: rootNode ? 23 : depth === 1 ? 17 : 15, fontWeight: rootNode ? 650 : depth === 1 ? 600 : 400, textWrap: { width: -24, height: -14, ellipsis: true } },
+        label: { text: textOf(item.topic, ''), fill: solid ? '#fff' : '#344054', fontSize: rootNode ? 23 : depth === 1 ? 17 : 15, fontWeight: rootNode ? 650 : depth === 1 ? 600 : 400, textWrap: { width: -24, height: -14, ellipsis: true } },
       },
     })
   })
