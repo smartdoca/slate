@@ -107,7 +107,7 @@ Markdown 交换是 Doca 的富文本/PDF 桥接边界：`富文本 -> slatetsx e
 />
 ```
 
-开启 `firstLineTitle` 时，空文档自动保留标题和正文两行。未传入提示词时使用中英语言包中的 `document.titlePlaceholder` / `document.bodyPlaceholder`；正文也兼容原有 `placeholder` 属性（`bodyPlaceholder` 优先）。
+开启 `firstLineTitle` 时，空文档自动保留标题和正文两行。未传入提示词时使用中英语言包中的 `document.titlePlaceholder` / `document.bodyPlaceholder`；标题模式的正文提示词只读取 `bodyPlaceholder`。
 
 需要固定首行为文档标题时，传入 `<RichTextEditor firstLineTitle />`（默认 `false`）。首个文本 Block 会规范为 `paragraph + title: 'h1'`，已有文字和 ID 保留；若首个 Block 是图片、表格等非文本内容，则在其前面补一个空标题，不破坏原内容。标题行回车后新行是正文，对齐和标题信息仍保存在文档中。关闭配置不会主动清除已有标题样式。
 
@@ -168,7 +168,7 @@ export function DocumentPage() {
 **非协同模式推荐非受控接入**：先加载数据，再挂载 `<RichTextEditor initialValue={loaded.children} />`。`initialValue` 只在初始化时读取；切换文档建议以业务 documentId 作为 React `key` 重新挂载。
 
 - `createEditorDocument(value)` 返回 `{ schemaVersion: 2, children }`，用于普通 JSON 持久化。
-- `readEditorDocument(snapshot)` 校验版本并准备当前结构；不提供旧版表格迁移，也不是完整的不可信 JSON 安全校验器。
+- `readEditorDocument(snapshot)` 校验版本并准备当前结构；输入必须符合当前表格结构，且该函数不是完整的不可信 JSON 安全校验器。
 - `ensureStableIds(value)` 补齐缺失 ID，重复 ID 会报错；`assertUniqueIds(value)` 可单独检查唯一性。
 - `onChange(value)` 可用于保存草稿、刷新外部工具栏；选区变化也可能触发，请防抖、去重，避免每次回调立即全量保存。
 - `getValue()` 返回当前树，业务不要原地修改它。需要独立副本时使用 `structuredClone()`。
@@ -405,7 +405,7 @@ export const FrenchEditor = () => <RichTextEditor language={french} />
 
 语言包类型为 `Readonly<Record<string, string>>`。字典 key 使用稳定英文标识（如 `toolbar.bold`、`resource.downloadFile`），不用中文或整句英文。占位符写成 `{name}`，已有文案里的 `{0}`、`{1}` 继续可用。需要区分数量时写 `files.count.one` 和 `files.count.other`，调用传入 `count`。缺失译文先用英文，再退回 key 本身。自定义组件内使用 `useEditorI18n().t(key, parameters)`。切换 `locale` 只更新按钮、菜单、占位符和提示，不重建文档、协同适配器或插件列表，也不翻译用户写进文档的文字。
 
-自定义 key 建议使用 `模块.操作` 的英文 camelCase 命名，例如 `resource.downloadFile`；显示文案修改时不改 key。此版本已移除中文 key，不保留旧别名；已有自定义字典请按预设字典更新。`{0}` 等插值占位符保持不变，例如 `t('resource.downloadFile', { 0: 'report.pdf' })`。这只调整界面语言包，不迁移或改写已保存的中文文档内容。
+自定义 key 建议使用 `模块.操作` 的英文 camelCase 命名，例如 `resource.downloadFile`；显示文案修改时不改 key。字典只接受预设英文 key。`{0}` 等插值占位符保持不变，例如 `t('resource.downloadFile', { 0: 'report.pdf' })`。界面语言包不会改写已保存的文档内容。
 
 ## 文档结构与 Block 创建
 
@@ -536,7 +536,7 @@ const plugins = [reference.plugin] // 保持数组引用稳定
 
 ## Yjs 协同接入
 
-**Doca 接入以 [Doca 接入契约](./docs/DOCA_INTEGRATION.md) 和其中的[完整宿主示例](./docs/examples/doca-host-managed.tsx)为准。** 当前格式固定为 `codec: 'slate-kit'`、`schemaVersion: 3`，必须提供非空 `epochId`；恢复输入是原始 Yjs checkpoint 加同 epoch 增量。项目未上线，本版本不兼容旧 schema、不迁移旧 Mention、不提供静默 JSON 重建。
+**Doca 接入以 [Doca 接入契约](./docs/DOCA_INTEGRATION.md) 和其中的[完整宿主示例](./docs/examples/doca-host-managed.tsx)为准。** 格式固定为 `codec: 'slate-kit'`、`schemaVersion: 3`，必须提供非空 `epochId`；恢复输入是原始 Yjs checkpoint 加同 epoch 增量，不提供静默 JSON 重建。
 
 Doca 使用 `createYjsCollaborationSession`，由平台持有网络、身份、权限、IndexedDB、outbox 和落库 ACK。组件本身不会开启 WebSocket、自动保存或本地存储。下面的 `connectYjsTransport`/`persistYjsDocument` 内容仅说明包的**独立低级模式**，Doca 宿主管理模式禁止叠加调用。
 
@@ -859,7 +859,7 @@ Agent tool 应接受这些稳定 ID 和结构化参数，服务端先做身份�
 
 ## @用户等业务扩展
 
-包内不实现 @用户、用户搜索、用户卡片、权限判断、跳转或通知。Doca 使用 `createAtomicInlineExtension` 自行实现这些交互；不存在旧 Mention 兼容层。
+包内不实现 @用户、用户搜索、用户卡片、权限判断、跳转或通知。Doca 使用 `createAtomicInlineExtension` 自行实现这些交互。
 
 SDK 不再内置 @用户的数据结构、搜索菜单、用户卡片、跳转或通知逻辑。这些行为依赖组织权限、路由、用户目录和产品交互，应由使用者通过 `EditorPlugin` 的 `withEditor`、`renderElement`、`isInline`、`isVoid` 等扩展点实现。
 
@@ -880,7 +880,7 @@ const card = {
 editorRef.current?.commands.insertBlock(card)
 ```
 
-卡片及内部各块必须有文档内唯一 ID；表格、分列仍只能放在文档第一级，不能插入卡片内部。此结构不兼容旧版卡片数据，接入方应直接使用新结构。协同时文本由内部块 ID 定位，无需再同步卡片标题/描述字段。
+卡片及内部各块必须有文档内唯一 ID；表格、分列只能放在文档第一级，不能插入卡片内部。协同时文本由内部块 ID 定位；卡片没有单独的标题或描述字段。
 
 ## 评论与在线状态
 

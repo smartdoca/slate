@@ -219,9 +219,9 @@ export async function exportMarkdown(value: EditorValue, options: Omit<DocumentE
   const signal = conversionSignal(options.signal); throwIfCancelled(signal); const warnings: ConversionWarning[] = []; const lines: string[] = []
   for (const element of flattenBlocks(value, warnings)) {
     throwIfCancelled(signal)
-    if (element.type === 'paragraph' || element.type.startsWith('heading-') || element.type === 'block-quote' || element.type === 'todo') {
-      const data = element as unknown as Record<string, unknown>; const text = inlineMarkdown(element.children, warnings, element.id); const title = element.type === 'paragraph' ? data.title as string | undefined : element.type.startsWith('heading-') ? `h${['one','two','three','four','five'].indexOf(element.type.slice(8)) + 1}` : undefined
-      const prefix = title ? `${'#'.repeat(Number(title.slice(1)))} ` : data.list === 'ol' || element.type === 'numbered-list' ? `${Number(data.listOrder || 1)}. ` : data.list === 'ul' || element.type === 'bulleted-list' ? '- ' : data.list === 'checkbox' || element.type === 'todo' ? `- [${data.checked ? 'x' : ' '}] ` : data.quote || element.type === 'block-quote' ? '> ' : ''
+    if (element.type === 'paragraph') {
+      const data = element as unknown as Record<string, unknown>; const text = inlineMarkdown(element.children, warnings, element.id); const title = data.title as string | undefined
+      const prefix = title ? `${'#'.repeat(Number(title.slice(1)))} ` : data.list === 'ol' ? `${Number(data.listOrder || 1)}. ` : data.list === 'ul' ? '- ' : data.list === 'checkbox' ? `- [${data.checked ? 'x' : ' '}] ` : data.quote ? '> ' : ''
       lines.push(`${'  '.repeat(Number(data.indentation || 0))}${prefix}${text}`, ''); continue
     }
     if (element.type === 'code-block') {

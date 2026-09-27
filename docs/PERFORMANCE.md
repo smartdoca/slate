@@ -53,6 +53,6 @@ yarn test:collaboration-idle
 现有 Skill 已要求以下行为，无需放宽规范：
 
 1. 只订阅一次 `session.onLocalUpdate` 进入待确认队列。不要为弥补性能监听所有 `Y.Doc` update 或改变 ACK 语义。
-2. `onChange` 仍可能由选区变化触发，以兼容宿主格式工具栏；不要在该回调中无条件执行全文 stringify、深拷贝、持久化或 setValue。`onOutlineChange` 现在只在初始化及内容变化时生成目录。
+2. `onChange` 可能由选区变化触发，供宿主格式工具栏读取当前状态；不要在该回调中无条件执行全文 stringify、深拷贝、持久化或 setValue。`onOutlineChange` 只在初始化及内容变化时生成目录。
 3. session、adapter、plugins 和初始值保持稳定；远端使用 applyRemoteUpdate，不通过受控 value 重置编辑器。
 4. Doca 真实双页面的浏览器绘制、网络、持久队列及服务端 ACK 仍需宿主联合验收。内存双副本测试不等于外部服务验收。

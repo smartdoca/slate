@@ -3,11 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Element, Node } from 'slate'
 import { ListTree } from 'lucide-react'
 import { useSlate } from 'slate-react'
-import type { RichElement, TitleLevel } from '../types'
-
-const LEGACY_LEVELS: Partial<Record<RichElement['type'], TitleLevel>> = {
-  'heading-one': 'h1', 'heading-two': 'h2', 'heading-three': 'h3', 'heading-four': 'h4', 'heading-five': 'h5',
-}
+import type { ParagraphElement } from '../types'
 
 const findBlockElement = (index: number) => document.querySelector<HTMLElement>(`[data-block-index="${index}"]`)
 
@@ -18,8 +14,9 @@ export function DocumentOutline() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const headings = useMemo(() => editor.children.flatMap((node, index) => {
     if (!Element.isElement(node)) return []
-    const element = node as RichElement
-    const level = element.type === 'paragraph' ? element.title : LEGACY_LEVELS[element.type]
+    if (node.type !== 'paragraph') return []
+    const element = node as ParagraphElement
+    const level = element.title
     if (!level) return []
     const text = Node.string(element).trim()
     if (!text) return []

@@ -1,6 +1,6 @@
 # Doca 接入契约（slatetsx 0.4.2 / Yjs schema 3）
 
-本文是 Doca 宿主管理模式的权威接入说明。该版本采用破坏性升级：不读取旧 schema，不提供旧 Mention 节点或 JSON→Yjs 迁移层，也不会在恢复失败时静默新建文档。
+本文是 Doca 宿主管理模式的权威接入说明。宿主只接受本文定义的当前 schema；恢复失败时不会静默新建文档。
 
 `0.4.2` 相对 `0.4.1` 增加 Markdown 资源交换约定，不改变 codec/schema、根 Map/Text 名称、结构命令编码、epoch 或 checkpoint；已有 schema 3 的原始 Yjs checkpoint/增量继续直接恢复。详见 [性能说明](./PERFORMANCE.md)。
 
@@ -85,7 +85,7 @@ const stopRemote = platform.onRemoteUpdate(update => session.applyRemoteUpdate(u
 
 presence 必须由 Doca 注入 `YjsPresenceBridge`。身份键是随机且每标签页唯一的 `sessionId`，`userId` 仅是资料字段，因此同账号双页不会互相过滤。编辑器只过滤自己的 sessionId。只读模式立即发布 `null`、取消订阅绘制；blur/unmount 也发布 `null`。Doca 负责断线超时清理、颜色和用户资料更新，资料变化不得重建 adapter。
 
-当前评论锚点限制为单个文本块；跨块评论、评论边栏/正文/回复、锚点跨结构拆分的迁移不在包内。presence 不持久化，也不走内容 update。
+评论锚点限制为单个文本块；包内不提供跨块评论、评论边栏/正文/回复或锚点跨结构拆分。presence 不持久化，也不走内容 update。
 
 ## 工具栏、查找和布局
 

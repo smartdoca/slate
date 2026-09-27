@@ -55,8 +55,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   const selectAllRequested = useRef(false)
   const applyingRemote = useRef(false)
   const renderElement = useCallback((props: RenderElementProps) => {
-    return plugins.map(plugin => plugin.renderElement?.(props)).find(Boolean) ?? <FormulaContext.Provider value={formulaRenderer}><ElementRenderer {...props} documentPlaceholders={firstLineTitle && !isReadOnly ? { title: titlePlaceholder ?? uiLanguage['document.titlePlaceholder'] ?? '请输入标题', body: bodyPlaceholder ?? placeholder ?? uiLanguage['document.bodyPlaceholder'] ?? '请输入正文' } : undefined} /></FormulaContext.Provider>
-  }, [plugins, formulaRenderer, firstLineTitle, isReadOnly, titlePlaceholder, bodyPlaceholder, placeholder, uiLanguage, editor])
+    return plugins.map(plugin => plugin.renderElement?.(props)).find(Boolean) ?? <FormulaContext.Provider value={formulaRenderer}><ElementRenderer {...props} documentPlaceholders={firstLineTitle && !isReadOnly ? { title: titlePlaceholder ?? uiLanguage['document.titlePlaceholder'] ?? '请输入标题', body: bodyPlaceholder ?? uiLanguage['document.bodyPlaceholder'] ?? '请输入正文' } : undefined} /></FormulaContext.Provider>
+  }, [plugins, formulaRenderer, firstLineTitle, isReadOnly, titlePlaceholder, bodyPlaceholder, uiLanguage, editor])
   const renderLeaf = useCallback((props: RenderLeafProps) => plugins.map(plugin => plugin.renderLeaf?.(props)).find(Boolean) ?? <LeafRenderer {...props} />, [plugins])
 
   const replaceDocument = useCallback((next: EditorValue) => {

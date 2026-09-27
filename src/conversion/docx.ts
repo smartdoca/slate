@@ -251,9 +251,9 @@ function inlineDocx(children: RichNode[], state: PackageState, blockId: string):
 
 function paragraphXml(element: RichElement, state: PackageState, overrideChildren?: RichNode[]) {
   const data = element as unknown as Record<string, unknown>
-  const title = element.type === 'paragraph' ? element.title : element.type.startsWith('heading-') ? `h${['one','two','three','four','five'].indexOf(element.type.slice(8)) + 1}` : undefined
+  const title = element.type === 'paragraph' ? element.title : undefined
   const style = element.type === 'code-block' ? 'Code' : title ? `Heading${title.slice(1)}` : undefined
-  const list = data.list || (element.type === 'numbered-list' ? 'ol' : element.type === 'bulleted-list' ? 'ul' : undefined)
+  const list = data.list
   const properties = `<w:pPr>${style ? `<w:pStyle w:val="${style}"/>` : ''}${list ? `<w:numPr><w:ilvl w:val="${Number(data.indentation || 0)}"/><w:numId w:val="${list === 'ul' ? 1 : 2}"/></w:numPr>` : ''}</w:pPr>`
   const children = overrideChildren || element.children
   return `<w:p>${properties}${inlineDocx(children, state, element.id)}</w:p>`
@@ -296,7 +296,7 @@ async function attachmentXml(element: RichElement, state: PackageState) {
 }
 
 async function blockXml(element: RichElement, state: PackageState): Promise<string> {
-  if (element.type === 'paragraph' || element.type.startsWith('heading-') || element.type === 'block-quote' || element.type === 'todo' || element.type === 'numbered-list' || element.type === 'bulleted-list') return paragraphXml(element, state)
+  if (element.type === 'paragraph') return paragraphXml(element, state)
   if (element.type === 'code-block') return paragraphXml(element, state, [{ text: element.code ?? Node.string(element), code: true }])
   if (element.type === 'table') {
     const rows = element.children as TableRowElement[]; const grid = element.columns.map(column => `<w:gridCol w:w="${Math.max(600, Math.round(column.width * 15))}"/>`).join('')

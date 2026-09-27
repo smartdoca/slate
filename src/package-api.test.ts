@@ -35,7 +35,7 @@ describe('public package data APIs', () => {
   it('extracts headings for an external outline', () => {
     const value = [
       { type: 'paragraph', id: 'a', title: 'h2', children: [{ text: 'Section' }] },
-      { type: 'heading-three', id: 'b', children: [{ text: 'Detail' }] },
+      { type: 'paragraph', id: 'b', title: 'h3', children: [{ text: 'Detail' }] },
     ] as EditorValue
     expect(getDocumentOutline(value).map(item => item.text)).toEqual(['Section', 'Detail'])
   })

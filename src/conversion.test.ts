@@ -205,8 +205,8 @@ describe('independent Markdown and DOCX conversion', () => {
     disconnect(); session.dispose()
   })
 
-  it('rejects legacy DOC, JSON, cancellation and configured size limits with typed errors', async () => {
-    await expect(importDocument(new Uint8Array(), { filename: 'legacy.doc' })).rejects.toMatchObject({ code: 'unsupported-format' })
+  it('rejects DOC, JSON, cancellation and configured size limits with typed errors', async () => {
+    await expect(importDocument(new Uint8Array(), { filename: 'unsupported.doc' })).rejects.toMatchObject({ code: 'unsupported-format' })
     await expect(importDocument('{}', { filename: 'document.json' })).rejects.toMatchObject({ code: 'unsupported-format' })
     await expect(importDocument('large', { filename: 'large.md', maxBytes: 2 })).rejects.toMatchObject({ code: 'too-large' })
     const controller = new AbortController(); controller.abort()
