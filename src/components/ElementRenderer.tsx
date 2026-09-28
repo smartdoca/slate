@@ -243,20 +243,22 @@ function CodeBlock({ element, children }: { element: Extract<RichElement, { type
 function LinkInline({ attributes, element, children }: { attributes: Record<string, unknown>; element: Extract<RichElement, { type: 'link' }>; children: React.ReactNode }) {
   const { t } = useEditorI18n()
 
-  const editor = useSlateStatic(); const [hovered, setHovered] = useState(false); const [editing, setEditing] = useState(false); const [draft, setDraft] = useState(element.url)
+  const editor = useSlateStatic(); const readOnly = useReadOnly(); const [hovered, setHovered] = useState(false); const [editing, setEditing] = useState(false); const [draft, setDraft] = useState(element.url)
   const url = normalizeLinkUrl(element.url)
+  const editingUrl = editing && !readOnly
   const save = () => {
+    if (readOnly) return
     const next = normalizeLinkUrl(draft)
     if (next) Transforms.setNodes(editor, { url: next }, { at: DOMEditor.findPath(editor, element) })
     setEditing(false)
   }
-  const remove = () => Transforms.unwrapNodes(editor, { at: DOMEditor.findPath(editor, element), match: node => Element.isElement(node) && node.type === 'link' })
+  const remove = () => { if (!readOnly) Transforms.unwrapNodes(editor, { at: DOMEditor.findPath(editor, element), match: node => Element.isElement(node) && node.type === 'link' }) }
   return <span {...attributes} className="sk-link-wrap" onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setHovered(false); setEditing(false); setDraft(element.url) }}>
     <a href={url || undefined} target="_blank" rel="noopener noreferrer" className="sk-link" onClick={event => { event.preventDefault(); if (url) window.open(url, '_blank', 'noopener,noreferrer') }}>{children}</a>
     {hovered && <span className="sk-link-preview" contentEditable={false} onPointerDown={event => event.stopPropagation()}>
       <Link2 size={15} />
-      {editing ? <input autoFocus aria-label={t("ui.editLinkUrl")} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); save() } if (event.key === 'Escape') { setEditing(false); setDraft(element.url) } }} /> : <span className="sk-link-preview-url" title={url}>{url}</span>}
-      {editing ? <><button data-tooltip={t("ui.saveLink")} title={t("ui.saveLink")} aria-label={t("ui.saveLink")} onClick={save}><Check size={15} /></button><button data-tooltip={t("ui.cancelEdit")} title={t("ui.cancelEdit")} aria-label={t("ui.cancelEdit")} onClick={() => { setEditing(false); setDraft(element.url) }}><X size={15} /></button></> : <><button data-tooltip={t("ui.editLink")} title={t("ui.editLink")} aria-label={t("ui.editLink")} onClick={() => setEditing(true)}><Pencil size={15} /></button><button data-tooltip={t("ui.openInNewWindow")} title={t("ui.openInNewWindow")} aria-label={t("ui.openInNewWindow")} onClick={() => { if (url) window.open(url, '_blank', 'noopener,noreferrer') }}><ExternalLink size={15} /></button><button data-tooltip={t("ui.removeLink")} title={t("ui.removeLink")} aria-label={t("ui.removeLink")} onClick={remove}><Unlink size={15} /></button></>}
+      {editingUrl ? <input autoFocus aria-label={t("ui.editLinkUrl")} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); save() } if (event.key === 'Escape') { setEditing(false); setDraft(element.url) } }} /> : <span className="sk-link-preview-url" title={url}>{url}</span>}
+      {editingUrl ? <><button data-tooltip={t("ui.saveLink")} title={t("ui.saveLink")} aria-label={t("ui.saveLink")} onClick={save}><Check size={15} /></button><button data-tooltip={t("ui.cancelEdit")} title={t("ui.cancelEdit")} aria-label={t("ui.cancelEdit")} onClick={() => { setEditing(false); setDraft(element.url) }}><X size={15} /></button></> : <>{!readOnly && <button data-tooltip={t("ui.editLink")} title={t("ui.editLink")} aria-label={t("ui.editLink")} onClick={() => setEditing(true)}><Pencil size={15} /></button>}<button data-tooltip={t("ui.openInNewWindow")} title={t("ui.openInNewWindow")} aria-label={t("ui.openInNewWindow")} onClick={() => { if (url) window.open(url, '_blank', 'noopener,noreferrer') }}><ExternalLink size={15} /></button>{!readOnly && <button className="sk-link-remove" data-tooltip={t("ui.removeLink")} title={t("ui.removeLink")} aria-label={t("ui.removeLink")} onClick={remove}><Unlink size={15} /></button>}</>}
     </span>}
   </span>
 }

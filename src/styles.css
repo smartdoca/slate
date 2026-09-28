@@ -404,7 +404,7 @@
 .sk-link-preview input { min-width: 0; flex: 1; height: 28px; box-sizing: border-box; padding: 0 8px; color: #1f2329; border: 1px solid #8fb0ff; border-radius: 5px; outline: 0; font-size: 12px; }
 .sk-link-preview button { flex: 0 0 28px; width: 28px; height: 28px; padding: 0; display: grid; place-items: center; color: #646a73; background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
 .sk-link-preview button:hover { color: #245bdb; background: #edf3ff; }
-.sk-link-preview button:last-child:hover { color: #f54a45; background: #fff0ef; }
+.sk-link-preview button.sk-link-remove:hover { color: #f54a45; background: #fff0ef; }
 
 /* Slate still owns every DOM node, so selections and copy remain exact. The browser can
    skip off-screen paint/layout work once a document crosses the large-document threshold. */
