@@ -341,6 +341,22 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   }
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     if (event.defaultPrevented || isReadOnly) return
+    const active = document.activeElement
+    if (active instanceof HTMLElement && active.closest('input, textarea, select')) {
+      event.preventDefault()
+      const text = event.clipboardData.getData('text/plain')
+      if (text && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement)) {
+        const prototype = active instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+        const setValue = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
+        const start = active.selectionStart ?? active.value.length
+        const end = active.selectionEnd ?? start
+        setValue?.call(active, `${active.value.slice(0, start)}${text}${active.value.slice(end)}`)
+        const caret = start + text.length
+        active.setSelectionRange(caret, caret)
+        active.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+      return true
+    }
     const copiedBlocks = parseBlockClipboard(event.clipboardData)
     const textContainer = editor.selection && Editor.above(editor, { at: editor.selection, match: node => Element.isElement(node) && (node.type === 'card' || node.type === 'column' || node.type === 'table-cell') })
     if (copiedBlocks?.length) {
