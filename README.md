@@ -4,7 +4,7 @@
 
 Embeddable collaborative rich text editor for React, built with Slate. The package owns the document canvas, selection, and block behavior. The host owns the toolbar, identity, assets, permissions, and network.
 
-Licensed under [AGPL-3.0-only](LICENSE).
+Licensed under [MIT](LICENSE).
 
 ## Install
 
