@@ -1,6 +1,6 @@
 {
   "name": "@smartdoca/slate",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "A Feishu-inspired, extensible rich text editor built with Slate and TypeScript.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -122,7 +122,7 @@
     "react",
     "typescript"
   ],
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/smartdoca/slate.git"
