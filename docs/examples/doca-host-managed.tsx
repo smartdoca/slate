@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { RichTextEditor, createAtomicInlineExtension, createId, type EditorComments, type ResourceConfig, type RichTextEditorHandle } from 'slatetsx-kit-editor'
+import { RichTextEditor, createAtomicInlineExtension, createId, type AttachmentElement, type EditorComments, type ResourceConfig, type RichTextEditorHandle } from 'slatetsx-kit-editor'
 import { Doc, YJS_CODEC, YJS_SCHEMA_VERSION, createYjsCollaborationSession, createYjsCommentAnchorAdapter, type CommentAnchor, type YjsPresenceBridge } from 'slatetsx-kit-editor/yjs'
 import 'slatetsx-kit-editor/style.css'
 
@@ -27,6 +27,7 @@ interface DocaPlatform {
   onRemoteUpdate(callback: (update: Uint8Array) => void): () => void
   presence: YjsPresenceBridge
   resources: ResourceConfig
+  previewAttachment(attachment: AttachmentElement): void // host checks asset access and opens its preview UI
   comments: readonly { id: string; anchor: CommentAnchor; resolved?: boolean }[]
   openComment(id: string): void
 }
@@ -56,6 +57,6 @@ export function DocaDocument({ platform, readonly }: { platform: DocaPlatform; r
     <button onClick={() => editor.current?.find('设计').at(0) && editor.current?.reveal(editor.current.find('设计')[0])}>查找</button>
     <button disabled={readonly} onClick={() => editor.current?.commands.insertInline({ type: 'custom:document-reference', id: createId(), documentId: 'doc-42', label: '设计说明', children: [{ text: '' }] })}>插入文档引用</button>
     <button disabled={readonly} onClick={() => editor.current?.commands.insertInline({ type: 'custom:user-reference', id: createId(), userId: 'user-42', label: '张三', children: [{ text: '' }] })}>插入用户引用</button>
-    <RichTextEditor ref={editor} initialValue={binding.runtime.getValue()} collaboration={binding.adapter} plugins={plugins} resources={platform.resources} comments={comments} mode={readonly ? 'readonly' : 'edit'} />
+    <RichTextEditor ref={editor} initialValue={binding.runtime.getValue()} collaboration={binding.adapter} plugins={plugins} resources={platform.resources} onAttachmentPreview={attachment => platform.previewAttachment(attachment)} comments={comments} mode={readonly ? 'readonly' : 'edit'} />
   </div>
 }

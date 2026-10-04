@@ -29,7 +29,7 @@ import { FormulaContext } from './formula'
 
 const ATOMIC_COPY_TYPES = new Set<RichElement['type']>(['columns', 'formula', 'table', 'image', 'video', 'flowchart', 'mindmap', 'attachment', 'card', 'code-block', 'divider'])
 
-export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor({ insertMenu, ariaLabel, initialValue = defaultValue, value, onChange, placeholder, titlePlaceholder, bodyPlaceholder, mode = 'edit', autoFocus = false, className = '', largeDocumentThreshold = 300, collaboration, resources, comments, formulaRenderer, firstLineTitle = false, locale, messages, language, onOutlineChange, onReady, onUploadStateChange, plugins = EMPTY_PLUGINS }, forwardedRef) {
+export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor({ insertMenu, ariaLabel, initialValue = defaultValue, value, onChange, placeholder, titlePlaceholder, bodyPlaceholder, mode = 'edit', autoFocus = false, className = '', largeDocumentThreshold = 300, collaboration, resources, onAttachmentPreview, comments, formulaRenderer, firstLineTitle = false, locale, messages, language, onOutlineChange, onReady, onUploadStateChange, plugins = EMPTY_PLUGINS }, forwardedRef) {
   const uiLanguage = useMemo(() => composeEditorLanguage({ locale, language, messages }), [locale, language, messages])
   const firstLineTitleRef = useRef(firstLineTitle)
   firstLineTitleRef.current = firstLineTitle
@@ -437,7 +437,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   const resolvedPlaceholder = placeholder || uiLanguage.placeholder
   return <InsertMenuContext.Provider value={insertMenu}><EditorI18nProvider language={uiLanguage}><div lang={editorHtmlLang(locale, language)} className={`sk-editor ${isReadOnly ? 'is-readonly' : ''} ${largeDocument ? 'is-large-document' : ''} ${className}`} data-title-mode={firstLineTitle || undefined} data-revision={revision}>
     <Slate editor={editor} initialValue={initialDocument} onChange={handleChange}>
-      <ResourceProvider editor={editor} config={resourceConfig} readOnly={isReadOnly} onStateChange={onUploadStateChange} runtimeRef={resourceRuntime}>
+      <ResourceProvider editor={editor} config={resourceConfig} readOnly={isReadOnly} onStateChange={onUploadStateChange} onAttachmentPreview={onAttachmentPreview} runtimeRef={resourceRuntime}>
       <BlockSelectionProvider value={blockSelection}>
         <div className="sk-page-shell">
           <div className="sk-page" onClickCapture={event => { const id = (event.target as HTMLElement).closest<HTMLElement>('[data-comment-id]')?.dataset.commentId; if (id) comments?.onAnchorClick?.(id) }} onCompositionStartCapture={event => {

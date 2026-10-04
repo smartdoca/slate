@@ -427,7 +427,9 @@
 .sk-block-frame:is(.is-menu-open, .is-block-selected) > :is(.sk-image, .sk-diagram-figure),
 .sk-block-frame > :is(.sk-image, .sk-diagram-figure).is-selected { outline: 1px solid #3370ff; outline-offset: 0; border-radius: 6px; }
 .sk-block-frame:is(.is-menu-open, .is-block-selected) > .sk-attachment,
-.sk-block-frame > .sk-attachment.is-selected { outline: none; }
+.sk-block-frame > .sk-attachment.is-selected { outline: 1px solid #3370ff; outline-offset: 0; border-color: #3370ff; box-shadow: none; }
+.sk-attachment-preview { flex: 0 0 32px; width: 32px; height: 32px; padding: 0; display: grid; place-items: center; color: #8f959e; background: transparent; border: 0; border-radius: 6px; cursor: pointer; }
+.sk-attachment-preview:hover { color: var(--attachment-color); background: var(--attachment-bg); }
 .sk-block-frame:is(.is-menu-open, .is-block-selected) > .sk-video,
 .sk-block-frame > .sk-video.is-selected { outline: 2px solid #3370ff; outline-offset: 0; border-radius: 6px; }
 .sk-block-frame:is(.is-menu-open, .is-block-selected) > .sk-video::after,
