@@ -105,6 +105,17 @@ presence 必须由 Doca 注入 `YjsPresenceBridge`。身份键是随机且每标
 
 文档节点只保存稳定 `path` 和名称/MIME/尺寸等元信息。预览走 `resolveUrl(path, info)`，下载走 `resolveDownloadUrl(path, info)`；临时签名 URL、File、blob URL、进度和错误不入文档。上传回调接收 `AbortSignal` 与进度；返回空路径、`blob:` 或 `data:` 会失败。`commands.cancelUpload(blockId)` 可由宿主取消指定占位；切只读或卸载也会 abort，晚到结果不会落入节点。失败/取消通过 `onUploadStateChange` 报告，失败占位由宿主决定删除或重新上传。
 
+附件卡片点击后显示蓝色选中框并聚焦编辑器，可复制整个附件节点、粘贴为新节点、Backspace/Delete 删除和撤销。只读允许选中、复制和预览，不能删除。编辑模式首次点击选中、再次点击预览；只读模式单击预览，也可直接点击卡片上的预览按钮。下载按钮独立执行下载，不触发预览。
+
+宿主通过 `RichTextEditor.onAttachmentPreview(attachment: AttachmentElement)` 打开附件预览。回调接收节点的稳定 `id/path/name/size/mimeType`，Doca 在调用时检查资源权限、解析可访问地址并实现预览 UI；编辑器不把解析后的 URL 保存进节点。上传中、失败或空路径附件不会触发预览；未传回调时不显示预览按钮。更新回调不重建 editor、adapter 或文档。
+
+```tsx
+<RichTextEditor
+  resources={platform.resources}
+  onAttachmentPreview={attachment => platform.previewAttachment(attachment)}
+/>
+```
+
 ## 已验证与能力限制
 
 源码测试覆盖：v3 严格初始化、原始 checkpoint+增量恢复、原子字段/ID、整块删除、复制、撤销/重做、edit/undo/redo 各一次本地 update、60 秒空闲零提交、远端无回声、同账号不同 session 光标、只读停止光标、评论高亮/点击/解决/失效、IME 期间远端更新后本地中文不丢字、上传取消/失败/只读中止、模型查找替换和只读限制。构建后还直接用 Node ESM 导入主入口与纯 `/codec` 入口。

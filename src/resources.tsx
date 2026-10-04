@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import { Editor, Element, Transforms } from 'slate'
 import { ensureRenderableImageFile } from './media'
-import type { ResourceConfig, ResourceInfo, ResourceKind, ResourceMode, ResourceUploadState, RichEditor, RichElement, UploadResult } from './types'
+import type { AttachmentElement, ResourceConfig, ResourceInfo, ResourceKind, ResourceMode, ResourceUploadState, RichEditor, RichElement, UploadResult } from './types'
 
 type InsertUpload = (node: RichElement) => void
 export type ResourceRuntime = {
@@ -11,6 +11,7 @@ export type ResourceRuntime = {
   retry(blockId: string, file?: File): Promise<void>
   resolve(resource: ResourceInfo, mode?: ResourceMode): Promise<string>
   stateFor(blockId?: string): ResourceUploadState | undefined
+  previewAttachment?: (attachment: AttachmentElement) => void
 }
 
 const ResourceContext = createContext<ResourceRuntime | null>(null)
@@ -19,7 +20,7 @@ function normalizedResult(result: UploadResult | string, file: File): UploadResu
   return typeof result === 'string' ? { path: result, name: file.name, size: file.size, mimeType: file.type } : result
 }
 
-export function ResourceProvider({ editor, config, readOnly = false, onStateChange, runtimeRef, children }: { editor: RichEditor; config?: ResourceConfig; readOnly?: boolean; onStateChange?: (states: readonly ResourceUploadState[]) => void; runtimeRef?: MutableRefObject<ResourceRuntime | null>; children: ReactNode }) {
+export function ResourceProvider({ editor, config, readOnly = false, onStateChange, onAttachmentPreview, runtimeRef, children }: { editor: RichEditor; config?: ResourceConfig; readOnly?: boolean; onStateChange?: (states: readonly ResourceUploadState[]) => void; onAttachmentPreview?: (attachment: AttachmentElement) => void; runtimeRef?: MutableRefObject<ResourceRuntime | null>; children: ReactNode }) {
   const [states, setStates] = useState<ResourceUploadState[]>([])
   const controllers = useRef(new Map<string, AbortController>())
   const previews = useRef(new Map<string, string>())
@@ -94,7 +95,7 @@ export function ResourceProvider({ editor, config, readOnly = false, onStateChan
       if (kind === 'image' || kind === 'video' || kind === 'attachment') await upload(kind, file ?? state!.file, () => {}, blockId)
     }
   }, [editor, states, upload])
-  const value = useMemo<ResourceRuntime>(() => ({ states, upload, cancel, retry, resolve, stateFor: id => states.find(state => state.blockId === id) }), [cancel, retry, resolve, states, upload])
+  const value = useMemo<ResourceRuntime>(() => ({ states, upload, cancel, retry, resolve, stateFor: id => states.find(state => state.blockId === id), previewAttachment: onAttachmentPreview }), [cancel, retry, resolve, states, upload, onAttachmentPreview])
   useEffect(() => { if (runtimeRef) runtimeRef.current = value; return () => { if (runtimeRef) runtimeRef.current = null } }, [runtimeRef, value])
   return <ResourceContext.Provider value={value}>{children}</ResourceContext.Provider>
 }

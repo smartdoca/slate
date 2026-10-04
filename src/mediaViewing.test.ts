@@ -1,12 +1,46 @@
 // @vitest-environment jsdom
-import { act, createElement, createRef } from 'react'
+import { act, createElement, createRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { expect, it, vi } from 'vitest'
-import { copyImage } from './components/MediaLightbox'
+import { copyImage, MediaDownloadMenu } from './components/MediaLightbox'
 import { RichTextEditor } from './RichTextEditor'
 import type { RichTextEditorHandle } from './types'
 
 const diagramPreview = '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"></svg>'
+
+it.each(['success', 'failure'] as const)('dismisses the media copy menu immediately while the clipboard is pending (%s)', async outcome => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
+  const blob = new Blob(['png'], { type: 'image/png' })
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: async () => blob })))
+  class FakeClipboardItem { constructor(public items: Record<string, Blob | Promise<Blob>>) {} }
+  vi.stubGlobal('ClipboardItem', FakeClipboardItem)
+  let complete!: () => void, fail!: (error: Error) => void
+  const write = vi.fn((items: FakeClipboardItem[]) => {
+    // Reading the promised PNG must still complete after the menu unmounts.
+    const png = Promise.resolve(items[0].items['image/png'])
+    return new Promise<void>((resolve, reject) => { complete = resolve; fail = reject }).then(async () => { expect((await png).type).toBe('image/png') })
+  })
+  const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { write } })
+  const root = createRoot(document.createElement('div'))
+  function Menu() {
+    const [open, setOpen] = useState(true)
+    return open ? createElement(MediaDownloadMenu, { src: '/test.png', downloadName: 'test.png', position: { x: 20, y: 20 }, close: () => setOpen(false) }) : null
+  }
+  try {
+    await act(async () => root.render(createElement(Menu)))
+    await act(async () => { (document.querySelector('.sk-media-context-menu button') as HTMLButtonElement).click() })
+    expect(write).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('.sk-media-context-menu')).toBeNull()
+    await act(async () => { outcome === 'success' ? complete() : fail(Error('Permission denied')) })
+    expect(document.querySelector('.sk-media-context-menu')).toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+    if (originalClipboard) Object.defineProperty(navigator, 'clipboard', originalClipboard)
+    else Reflect.deleteProperty(navigator, 'clipboard')
+    vi.unstubAllGlobals()
+  }
+})
 
 it('selects flowcharts and mind maps on the first click and previews on the next', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
@@ -43,6 +77,8 @@ it('selects an attachment with a thin frame and clears it on a blank click', asy
     ] })))
     const card = container.querySelector('.sk-attachment')!
     await act(async () => { card.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    // Slate defers focus while selection operations flush, as in the browser.
+    await act(async () => { await vi.waitFor(() => expect(document.activeElement).toBe(container.querySelector('.sk-editable'))) })
     expect(card.classList.contains('is-selected')).toBe(true)
     await act(async () => { document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     expect(card.classList.contains('is-selected')).toBe(false)
@@ -61,6 +97,7 @@ it('clears image selection when clicking blank space outside the document', asyn
     ] })))
     const figure = container.querySelector('.sk-image')!
     await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { await vi.waitFor(() => expect(document.activeElement).toBe(container.querySelector('.sk-editable'))) })
     expect(figure.classList.contains('is-selected')).toBe(true)
     await act(async () => { document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     expect(figure.classList.contains('is-selected')).toBe(false)

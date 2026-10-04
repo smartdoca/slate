@@ -91,7 +91,7 @@ async function toClipboardPng(src: string) {
   }
 }
 
-export function copyImage(src: string) {
+export async function copyImage(src: string) {
   const clipboard = navigator.clipboard
   if (!clipboard?.write || typeof ClipboardItem === 'undefined') return Promise.reject(new Error('clipboard unavailable'))
   // Keep write() on the user gesture; the blob can resolve afterwards.
@@ -109,7 +109,7 @@ export function MediaDownloadMenu({ src, downloadName, position, close }: { src:
   }, [close])
   if (typeof document === 'undefined') return null
   return createPortal(<div className="sk-media-context-menu" style={{ left: Math.min(position.x, window.innerWidth - 166), top: Math.min(position.y, window.innerHeight - 86) }} onPointerDown={event => event.stopPropagation()}>
-    <button onClick={() => { void copyImage(src).catch(() => {}).finally(close) }}><Copy size={16} />{t("ui.copyImage")}</button>
+    <button onClick={() => { void copyImage(src).catch(() => {}); close() }}><Copy size={16} />{t("ui.copyImage")}</button>
     <button onClick={() => { downloadImage(src, downloadName); close() }}><Download size={16} />{t("ui.downloadImage")}</button>
   </div>, document.body)
 }

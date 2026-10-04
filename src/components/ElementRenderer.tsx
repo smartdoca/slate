@@ -179,7 +179,7 @@ function CardBlock({ element, children }: { element: CardElement; children: Reac
 function AttachmentBlock({ element }: { element: AttachmentElement }) {
   const { t } = useEditorI18n()
 
-  const editor = useSlateStatic(); const selected = useSelected()
+  const editor = useSlateStatic(); const selected = useSelected(); const readOnly = useReadOnly()
   const runtime = useResourceRuntime(); const upload = runtime.stateFor(element.id)
   const resource = { kind: 'attachment' as const, path: element.path || '', name: element.name, size: element.size, mimeType: element.mimeType }
   const downloadUrl = useResolvedResource(resource, 'download')
@@ -187,8 +187,27 @@ function AttachmentBlock({ element }: { element: AttachmentElement }) {
   const presentation = getAttachmentPresentation(element.name, element.mimeType)
   const icons: Record<AttachmentKind, typeof File> = { pdf: FileText, document: FileText, spreadsheet: FileSpreadsheet, presentation: Presentation, archive: FileArchive, image: FileImage, audio: FileAudio, video: FileVideo, code: FileCode2, text: FileText, file: File }
   const Icon = icons[presentation.kind]
-  const selectAttachment = (event: React.MouseEvent) => { event.preventDefault(); Transforms.select(editor, DOMEditor.findPath(editor, element)) }
-  return <div className={`sk-attachment is-${presentation.kind} ${selected ? 'is-selected' : ''}`} contentEditable={false} onMouseDown={selectAttachment}><span className="sk-attachment-icon"><Icon size={23} /><i>{presentation.extension}</i></span><div><b>{element.name}</b><small>{upload ? t("resource.uploadProgress", { 0: upload.status === 'uploading' ? t("uploading") : t("uploadFailed"), 1: Math.round(upload.progress * 100) }) : `${t(presentation.label)} · ${size}`}</small></div>{downloadUrl && !upload && <a className="sk-attachment-download" href={downloadUrl} download={element.name} aria-label={t("resource.downloadFile", { 0: element.name })} title={t("ui.downloadAttachment")} onMouseDown={event => event.stopPropagation()}><Download size={17} /></a>}</div>
+  const canPreview = Boolean(element.path && !upload && runtime.previewAttachment)
+  const previewOnClick = useRef(false)
+  const preview = () => { if (canPreview) runtime.previewAttachment?.(element) }
+  const selectAttachment = (event: React.MouseEvent<HTMLDivElement>) => {
+    previewOnClick.current = readOnly || isSelectedElement(editor, element)
+    if (event.defaultPrevented || (event.button !== 0 && event.button !== 2)) return
+    event.preventDefault()
+    Transforms.select(editor, DOMEditor.findPath(editor, element))
+    // Readonly Editable is not focusable; keep keyboard copy on the card.
+    if (readOnly) event.currentTarget.focus()
+    else DOMEditor.focus(editor)
+  }
+  return <div className={`sk-attachment is-${presentation.kind} ${selected ? 'is-selected' : ''}`} contentEditable={false} tabIndex={readOnly ? -1 : undefined}
+    title={canPreview ? t(readOnly ? 'resource.clickToPreviewAttachment' : 'resource.selectThenPreviewAttachment') : undefined}
+    onMouseDown={selectAttachment} onClick={event => { if (shouldOpenMediaPreview(readOnly, previewOnClick.current, event)) preview() }}
+    onKeyDown={event => { if (canPreview && event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); event.stopPropagation(); preview() } }}>
+    <span className="sk-attachment-icon"><Icon size={23} /><i>{presentation.extension}</i></span>
+    <div><b>{element.name}</b><small>{upload ? t("resource.uploadProgress", { 0: upload.status === 'uploading' ? t("uploading") : t("uploadFailed"), 1: Math.round(upload.progress * 100) }) : `${t(presentation.label)} · ${size}`}</small></div>
+    {canPreview && <button type="button" className="sk-attachment-preview" aria-label={t('resource.previewAttachment', { name: element.name })} title={t('resource.previewAttachment', { name: element.name })} onMouseDown={event => { event.preventDefault(); event.stopPropagation() }} onClick={event => { event.stopPropagation(); preview() }}><Maximize2 size={17} /></button>}
+    {downloadUrl && !upload && <a className="sk-attachment-download" href={downloadUrl} download={element.name} aria-label={t("resource.downloadFile", { 0: element.name })} title={t("ui.downloadAttachment")} onMouseDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}><Download size={17} /></a>}
+  </div>
 }
 
 function CodeBlock({ element, children }: { element: Extract<RichElement, { type: 'code-block' }>; children: React.ReactNode }) {

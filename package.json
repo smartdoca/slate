@@ -1,6 +1,6 @@
 {
   "name": "@smartdoca/slate",
-  "version": "0.4.12",
+  "version": "0.4.13",
   "description": "A Feishu-inspired, extensible rich text editor built with Slate and TypeScript.",
   "type": "module",
   "main": "./dist/index.cjs",

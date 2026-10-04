@@ -42,6 +42,7 @@ export function Editor() {
 | `largeDocumentThreshold` | `number \| false` | 顶层块超过该数量后启用渲染隔离。`false` 关闭。 |
 | `collaboration` | `CollaborationAdapter` | 本地操作、远端更新和在线选区的宿主桥。 |
 | `resources` | `ResourceConfig` | 宿主上传和 URL 解析。 |
+| `onAttachmentPreview` | `(attachment: AttachmentElement) => void` | 宿主实现附件预览，接收稳定 path 和元信息。编辑时先选中、再次点击预览；只读时单击预览。 |
 | `comments` | `EditorComments` | 宿主拥有的评论界面。 |
 | `formulaRenderer` | `FormulaRenderer` | 公式块渲染。 |
 | `locale` | `string` | `zh` 和省略为中文，其他代码为英文。 |

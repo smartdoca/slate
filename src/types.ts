@@ -245,6 +245,9 @@ export interface RichTextEditorProps {
   largeDocumentThreshold?: number | false
   collaboration?: CollaborationAdapter
   resources?: ResourceConfig
+  /** Host-owned preview for a completed attachment. Receives its stable path and metadata.
+   * Edit mode: select first, click again to preview. Readonly: preview on first click. */
+  onAttachmentPreview?: (attachment: AttachmentElement) => void
   comments?: EditorComments
   formulaRenderer?: import('./formula').FormulaRenderer
   /** Interface language. `zh` and omitted both show Chinese. Any other code shows English. */

@@ -42,6 +42,7 @@ export function Editor() {
 | `largeDocumentThreshold` | `number \| false` | Enables rendering isolation after this many top-level blocks. `false` disables it. |
 | `collaboration` | `CollaborationAdapter` | Host bridge for local operations, remote updates, and presence. |
 | `resources` | `ResourceConfig` | Host upload and URL resolution. |
+| `onAttachmentPreview` | `(attachment: AttachmentElement) => void` | Host-owned attachment preview with a stable path and metadata. Select first, click again to preview; readonly previews on the first click. |
 | `comments` | `EditorComments` | Host-owned comment UI. |
 | `formulaRenderer` | `FormulaRenderer` | Renders formula blocks. |
 | `locale` | `string` | `zh` and omitted stay Chinese. Any other code shows English. |
