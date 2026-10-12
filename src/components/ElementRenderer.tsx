@@ -1,10 +1,11 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { ColumnBlock, ColumnsBlock } from './ColumnsBlock'
 import { Element, Node, Transforms } from 'slate'
 import { DOMEditor } from 'slate-dom'
 import { useFocused, useReadOnly, useSelected, useSlateSelector, useSlateStatic, type RenderElementProps } from 'slate-react'
-import { Check, Download, ExternalLink, File, FileArchive, FileAudio, FileCode2, FileImage, FileSpreadsheet, FileText, FileVideo, ImageIcon, Link2, Maximize2, Pencil, Presentation, Unlink, X } from 'lucide-react'
+import { Check, Copy, Download, ExternalLink, File, FileArchive, FileAudio, FileCode2, FileImage, FileSpreadsheet, FileText, FileVideo, ImageIcon, Link2, Maximize2, Pencil, Presentation, Unlink, X } from 'lucide-react'
 import Prism from 'prismjs'
+import { SelectMenu } from './SelectMenu'
 import { highlightCode } from '../codeHighlight'
 import 'prismjs/components/prism-markup.js'
 import 'prismjs/components/prism-css.js'
@@ -130,7 +131,7 @@ function ImageCaption({ element }: { element: ImageElement }) {
 }
 
 function ImageBlock({ element }: { element: ImageElement }) {
-  const editor = useSlateStatic(); const selected = useSelected(); const focused = useFocused(); const start = useRef({ x: 0, width: 0 }); const [resizing, setResizing] = useState(false); const [viewing, setViewing] = useState(false); const [downloadMenu, setDownloadMenu] = useState<{ x: number; y: number } | null>(null)
+  const editor = useSlateStatic(); const selected = useSelected(); const start = useRef({ x: 0, width: 0 }); const [resizing, setResizing] = useState(false); const [viewing, setViewing] = useState(false); const [downloadMenu, setDownloadMenu] = useState<{ x: number; y: number } | null>(null)
   const readOnly = useReadOnly()
   const runtime = useResourceRuntime(); const { t } = useEditorI18n(); const upload = runtime.stateFor(element.id)
   const resource = { kind: 'image' as const, path: element.path || '', name: element.alt }
@@ -145,15 +146,13 @@ function ImageBlock({ element }: { element: ImageElement }) {
     const width = Math.max(180, Math.min(960, start.current.width + e.clientX - start.current.x))
     Transforms.setNodes(editor, { width }, { at: DOMEditor.findPath(editor, element) })
   }
-  const previewOnClick = useRef(false)
   const selectImage = (event: React.MouseEvent) => {
     event.preventDefault()
-    previewOnClick.current = readOnly || (selected && focused) || isSelectedElement(editor, element)
     if (readOnly) return
     Transforms.select(editor, DOMEditor.findPath(editor, element)); DOMEditor.focus(editor)
   }
   return <><figure contentEditable={false} className={`sk-image is-style-${element.displayStyle || 'rounded'} ${selected ? 'is-selected' : ''}`} style={{ width: element.width || 640, marginLeft: element.align === 'right' || element.align === 'center' ? 'auto' : 0, marginRight: element.align === 'center' ? 'auto' : 0 }} onMouseDown={selectImage}>
-    {src && <img src={src} onError={() => setFailedSrc(src)} onLoad={event => { setFailedSrc(null); if (!event.currentTarget.naturalWidth || !event.currentTarget.naturalHeight) event.currentTarget.style.aspectRatio = '16 / 9' }} alt={element.alt || ''} title={t(readOnly ? 'media.clickToPreview' : 'media.clickToSelectThenPreview')} tabIndex={0} onClick={event => { if (shouldOpenMediaPreview(readOnly, previewOnClick.current, event)) setViewing(true) }} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); setViewing(true) } }} onContextMenu={event => { event.preventDefault(); setDownloadMenu({ x: event.clientX, y: event.clientY }) }} />}
+    {src && <img src={src} onError={() => setFailedSrc(src)} onLoad={event => { setFailedSrc(null); if (!event.currentTarget.naturalWidth || !event.currentTarget.naturalHeight) event.currentTarget.style.aspectRatio = '16 / 9' }} alt={element.alt || ''} title={t(readOnly ? 'media.clickToPreview' : 'media.clickToSelectThenPreview')} tabIndex={0} onClick={event => { if (shouldOpenMediaPreview(readOnly, false, event)) setViewing(true) }} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); setViewing(true) } }} onContextMenu={event => { event.preventDefault(); setDownloadMenu({ x: event.clientX, y: event.clientY }) }} />}
     {upload?.status === 'uploading' && <div className="sk-upload-overlay"><span>{t('uploading')} {Math.round(upload.progress * 100)}%</span><progress max={1} value={upload.progress} /></div>}
     {(upload?.status === 'error' || !src || failedSrc === src) && upload?.status !== 'uploading' && <div className="sk-resource-failure" role="status" onMouseDown={e => e.stopPropagation()}><span>{upload?.status === 'error' ? t('uploadFailed') : t('resource.imageUnavailable')}</span>{!readOnly && <div>{upload?.status === 'error' && <button type="button" onClick={() => void runtime.retry(element.id!)}>{t('resource.retryUpload')}</button>}<button type="button" onClick={() => replacement.current?.click()}>{t('resource.replaceImage')}</button><button type="button" onClick={() => { runtime.cancel(element.id!); Transforms.removeNodes(editor, { at: DOMEditor.findPath(editor, element) }) }}>{t('resource.removePlaceholder')}</button><input ref={replacement} hidden type="file" accept={IMAGE_FILE_ACCEPT} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) void runtime.retry(element.id!, file) }} /></div>}</div>}
     {element.showCaption && <ImageCaption element={element} />}
@@ -223,6 +222,12 @@ function CodeBlock({ element, children }: { element: Extract<RichElement, { type
     textarea?.addEventListener('beforeinput', isolate)
     return () => textarea?.removeEventListener('beforeinput', isolate)
   }, [])
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
+  useEffect(() => {
+    if (copyState === 'idle') return
+    const timer = window.setTimeout(() => setCopyState('idle'), 2000)
+    return () => window.clearTimeout(timer)
+  }, [copyState])
   const pendingSelection = useRef<{ start: number; end: number; direction: 'forward' | 'backward' | 'none'; scrollLeft: number; scrollTop: number } | null>(null)
   const language = element.language || 'typescript'; const prismLanguage = language === 'html' ? 'markup' : language === 'plaintext' ? 'plain' : language
   const sourceCode = element.code ?? Node.string(element); const [code, setCode] = useState(sourceCode)
@@ -243,6 +248,7 @@ function CodeBlock({ element, children }: { element: Extract<RichElement, { type
     pendingSelection.current = null
   }, [code])
   const updateCode = (value: string, selection?: { start: number; end: number; direction: 'forward' | 'backward' | 'none'; scrollLeft: number; scrollTop: number }) => {
+    if (readOnly) return
     if (selection) pendingSelection.current = selection
     setCode(value)
     Transforms.setNodes(editor, { code: value }, { at: DOMEditor.findPath(editor, element) })
@@ -252,11 +258,18 @@ function CodeBlock({ element, children }: { element: Extract<RichElement, { type
     event.stopPropagation(); const target = event.currentTarget
     if (event.nativeEvent.isComposing || event.keyCode === 229) return
     if (isNativeTextBoundaryBackspace(event.key, target.selectionStart, target.selectionEnd)) { event.preventDefault(); return }
-    if (event.key !== 'Tab') return
+    if (event.key !== 'Tab' || readOnly) return
     event.preventDefault(); const start = target.selectionStart; const end = target.selectionEnd; const next = `${code.slice(0, start)}  ${code.slice(end)}`
     updateCode(next, { start: start + 2, end: start + 2, direction: 'none', scrollLeft: target.scrollLeft, scrollTop: target.scrollTop })
   }
-  return <><div className="sk-code" contentEditable={false} onMouseDown={event => event.stopPropagation()} onFocus={event => { event.stopPropagation(); DOMEditor.blur(editor); if (editor.selection) Transforms.deselect(editor) }} onBeforeInput={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()} onContextMenu={event => event.stopPropagation()}><div className="sk-code-toolbar"><span /><span /><span /><select disabled={readOnly} aria-label={t("ui.codeLanguage")} value={language} onChange={e => Transforms.setNodes(editor, { language: e.target.value }, { at: DOMEditor.findPath(editor, element) })}>{CODE_LANGUAGES.map(([value, label]) => <option value={value} key={value}>{t(label)}</option>)}</select></div><div className="sk-code-body"><pre ref={highlightRef} className={`sk-code-highlight language-${prismLanguage}`} aria-hidden="true"><code dangerouslySetInnerHTML={{ __html: highlighted || ' ' }} /></pre><textarea readOnly={readOnly} ref={textareaRef} className="sk-code-editor" aria-label={t("code.languageLabel", { 0: language })} value={code} rows={1} wrap="off" spellCheck={false} onCompositionStart={event => event.stopPropagation()} onCompositionEnd={event => event.stopPropagation()} onKeyDown={handleCodeKeyDown} onChange={event => { const target = event.currentTarget; updateCode(target.value, { start: target.selectionStart, end: target.selectionEnd, direction: target.selectionDirection, scrollLeft: target.scrollLeft, scrollTop: target.scrollTop }) }} onScroll={event => { if (highlightRef.current) highlightRef.current.style.transform = `translateX(${-event.currentTarget.scrollLeft}px)` }} /></div></div><span className="sk-code-slate-value">{children}</span></>
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopyState('copied')
+    } catch { setCopyState('failed') }
+  }
+  const copyLabel = t(copyState === 'copied' ? 'code.copied' : copyState === 'failed' ? 'code.copyFailed' : 'code.copy')
+  return <><div className="sk-code" contentEditable={false} onMouseDown={event => event.stopPropagation()} onFocus={event => { event.stopPropagation(); DOMEditor.blur(editor); if (editor.selection) Transforms.deselect(editor) }} onBeforeInput={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()} onContextMenu={event => event.stopPropagation()}><div className="sk-code-toolbar"><span /><span /><span /><div className="sk-code-actions"><SelectMenu disabled={readOnly} label={t('ui.codeLanguage')} value={language} options={CODE_LANGUAGES.map(([value, label]) => ({ value, label: t(label) }))} onChange={language => { if (!readOnly) Transforms.setNodes(editor, { language }, { at: DOMEditor.findPath(editor, element) }) }} /><button type="button" className={`sk-code-copy is-${copyState}`} aria-label={copyLabel} title={copyLabel} onClick={() => void copyCode()}>{copyState === 'copied' ? <Check size={14} /> : <Copy size={14} />}<span className="sk-code-copy-status" aria-live="polite">{copyLabel}</span></button></div></div><div className="sk-code-body"><pre ref={highlightRef} className={`sk-code-highlight language-${prismLanguage}`} aria-hidden="true"><code dangerouslySetInnerHTML={{ __html: highlighted || ' ' }} /></pre><textarea readOnly={readOnly} ref={textareaRef} className="sk-code-editor" aria-label={t("code.languageLabel", { 0: language })} value={code} rows={1} wrap="off" spellCheck={false} onCompositionStart={event => event.stopPropagation()} onCompositionEnd={event => event.stopPropagation()} onKeyDown={handleCodeKeyDown} onChange={event => { const target = event.currentTarget; updateCode(target.value, { start: target.selectionStart, end: target.selectionEnd, direction: target.selectionDirection, scrollLeft: target.scrollLeft, scrollTop: target.scrollTop }) }} onScroll={event => { if (highlightRef.current) highlightRef.current.style.transform = `translateX(${-event.currentTarget.scrollLeft}px)` }} /></div></div><span className="sk-code-slate-value">{children}</span></>
 }
 
 function LinkInline({ attributes, element, children }: { attributes: Record<string, unknown>; element: Extract<RichElement, { type: 'link' }>; children: React.ReactNode }) {

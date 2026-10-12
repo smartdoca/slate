@@ -42,13 +42,13 @@ it.each(['success', 'failure'] as const)('dismisses the media copy menu immediat
   }
 })
 
-it('selects flowcharts and mind maps on the first click and previews on the next', async () => {
+it('keeps flowcharts and mind maps selected on repeated clicks and previews through the button', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
   const container = document.createElement('div'); document.body.append(container)
   const root = createRoot(container)
   try {
     await act(async () => root.render(createElement(RichTextEditor, { initialValue: [
-      { type: 'flowchart', id: 'flow', nodes: [], edges: [], previewSvg: diagramPreview, previewVersion: 6, children: [{ text: '' }] },
+      { type: 'flowchart', id: 'flow', nodes: [], edges: [], previewSvg: diagramPreview, previewVersion: 8, children: [{ text: '' }] },
       { type: 'mindmap', id: 'mind', mindData: { direction: 2, nodeData: { id: 'root', topic: '中心', expanded: true, children: [] } }, previewSvg: diagramPreview, previewVersion: 5, children: [{ text: '' }] },
     ] })))
     for (const figure of Array.from(container.querySelectorAll('.sk-diagram-figure'))) {
@@ -59,6 +59,8 @@ it('selects flowcharts and mind maps on the first click and previews on the next
       expect(figure.classList.contains('is-selected')).toBe(true)
       await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
       await act(async () => { preview.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+      expect(document.querySelector('.sk-media-lightbox')).toBeNull()
+      await act(async () => { (figure.querySelector('.sk-media-corner-actions button') as HTMLButtonElement).click() })
       expect(document.querySelector('.sk-media-lightbox img')).not.toBeNull()
       await act(async () => { document.querySelector('.sk-media-lightbox-viewport')!.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
       expect(document.querySelector('.sk-media-lightbox')).toBeNull()
@@ -105,7 +107,7 @@ it('clears image selection when clicking blank space outside the document', asyn
   } finally { await act(async () => root.unmount()); container.remove() }
 })
 
-it('selects an editable image on the first click and previews on the next', async () => {
+it('keeps editable images selected on repeated clicks and previews through the button', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
   const ref = createRef<RichTextEditorHandle>()
   const container = document.createElement('div'); document.body.append(container)
@@ -123,6 +125,8 @@ it('selects an editable image on the first click and previews on the next', asyn
     expect(ref.current!.editor.selection).toEqual({ anchor: { path: [0, 0], offset: 0 }, focus: { path: [0, 0], offset: 0 } })
     await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(document.querySelector('.sk-media-lightbox')).toBeNull()
+    await act(async () => { (figure.querySelector('.sk-media-preview-button') as HTMLButtonElement).click() })
     expect(document.querySelector('.sk-media-lightbox img')?.getAttribute('src')).toBe('/test.png')
   } finally { await act(async () => root.unmount()); container.remove() }
 })
