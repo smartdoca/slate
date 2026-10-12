@@ -564,3 +564,43 @@
 .sk-block-type-icon[data-block-kind="formula"] { color: #ab61cc; }
 .sk-block-type-icon[data-block-kind="block-quote"] { color: #8d78aa; }
 .sk-block-type-icon[data-block-kind="bulleted-list"], .sk-block-type-icon[data-block-kind="numbered-list"] { color: #528c9c; }
+
+/* Compact diagram text editors and a clipped-block-safe language menu. */
+.sk-diagram-inline-editor { position: fixed; z-index: 135; box-sizing: border-box; min-height: 34px; max-height: 180px; padding: 6px 9px; resize: none; line-height: 1.45; transform: translate(-50%, -50%); color: #1f2329; background: #fff; border: 1px solid #7aa2ff; border-radius: 5px; outline: 0; box-shadow: 0 0 0 3px rgba(51,112,255,.12), 0 4px 12px rgba(31,35,41,.12); text-align: center; font-family: inherit; animation: sk-control-enter .12s ease-out; }
+.sk-edge-reset { width: 100%; margin-bottom: 12px; padding: 7px 10px; color: #245bdb; background: #edf3ff; border: 1px solid #d5e2ff; border-radius: 5px; cursor: pointer; }
+.sk-style-presets { grid-template-columns: repeat(6, 1fr); }
+.sk-flow-canvas-toolbar { flex: 0 0 auto; }
+.sk-diagram-dialog:has(.sk-flow-workspace) > header > div:first-child { min-width: 0; display: block; }
+.sk-diagram-dialog:has(.sk-flow-workspace) > header button { white-space: nowrap; }
+@media (max-width: 1000px) { .sk-diagram-dialog:has(.sk-flow-workspace) > header small { display: none; } }
+.sk-code-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.sk-select-trigger, .sk-code-copy { min-height: 26px; padding: 3px 7px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: #4e5969; background: #fff; border: 1px solid #dee0e3; border-radius: 5px; font-family: inherit; font-size: 12px; line-height: 1.4; cursor: pointer; transition: background .12s, border-color .12s, transform .12s; }
+.sk-select-trigger:hover, .sk-code-copy:hover, .sk-select-trigger[aria-expanded="true"] { color: #245bdb; background: #f4f7ff; border-color: #8fb0ff; }
+.sk-select-trigger:focus-visible, .sk-code-copy:focus-visible { outline: 2px solid #8fb0ff; outline-offset: 2px; }
+.sk-select-trigger:disabled { cursor: default; background: transparent; border-color: transparent; color: #646a73; }
+.sk-code-copy:active { transform: scale(.96); }
+.sk-code-copy.is-copied { color: #218b66; border-color: #a9dfcb; }
+.sk-code-copy.is-failed { color: #c43d38; }
+.sk-select-menu { position: fixed; z-index: 180; box-sizing: border-box; width: 200px; padding: 5px; overflow-y: auto; overscroll-behavior: contain; color: #4e5969; background: #fff; border: 1px solid #e0e5ef; border-radius: 7px; box-shadow: 0 8px 24px rgba(31,35,41,.14); outline: 0; animation: sk-control-enter .12s ease-out; }
+.sk-select-menu [role="option"] { min-height: 28px; padding: 2px 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-radius: 4px; font: 12px/1.5 system-ui, sans-serif; cursor: pointer; }
+.sk-select-menu [role="option"].is-active { color: #245bdb; background: #edf3ff; }
+.sk-select-menu [aria-selected="true"] { color: #245bdb; }
+@keyframes sk-control-enter { from { opacity: 0; translate: 0 -3px; } to { opacity: 1; translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .sk-select-menu, .sk-diagram-inline-editor { animation: none; } .sk-select-trigger, .sk-code-copy { transition: none; } }
+
+.sk-code-copy { width: 26px; height: 26px; padding: 0; }
+.sk-code-copy-status { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; }
+
+/* Native filled-arrow controls and a more discoverable diagram palette. */
+.sk-arrow-settings { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; }
+.sk-arrow-settings label { display: block; margin: 0 0 10px; color: #646a73; font-size: 11px; }
+.sk-arrow-settings output { float: right; color: #245bdb; font-size: 11px; }
+.sk-arrow-settings small { display: block; color: #788292; font-size: 10px; line-height: 1.55; }
+.sk-arrow-bend-handle { position: fixed; z-index: 120; width: 13px; height: 13px; padding: 0; transform: translate(-50%, -50%); border: 2px solid #fff; border-radius: 50%; background: #3370ff; box-shadow: 0 0 0 1px #3370ff, 0 2px 5px #1f232933; cursor: move; touch-action: none; }
+.sk-arrow-bend-handle:focus-visible { outline: 3px solid #baceff; outline-offset: 3px; }
+.sk-flow-palette section button.has-label { width: 36px; height: 48px; gap: 3px; }
+.sk-flow-palette section button .sk-flow-shape-label { width: 36px; font-size: 9px; line-height: 12px; text-overflow: ellipsis; }
+.sk-flow-palette .sk-flow-templates > div { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.sk-flow-palette .sk-flow-templates button { width: 100%; height: 68px; padding: 6px; gap: 4px; background: #fbfcff; border-color: #e1e6f2; cursor: pointer; }
+.sk-flow-palette .sk-flow-templates button svg { width: 100%; height: 32px; }
+.sk-flow-palette .sk-flow-templates button span { max-width: 100%; font-size: 10px; line-height: 14px; }
