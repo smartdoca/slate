@@ -2,7 +2,7 @@
 import { expect, it } from 'vitest'
 import { Shape } from '@antv/x6'
 import * as Y from 'yjs'
-import { applyEdgeGeometry, makeEdge, makeNode, setNodeText } from './components/DiagramBlock'
+import { applyEdgeGeometry, makeEdge, makeNode, serializeDiagramNode, setNodeText } from './components/DiagramBlock'
 import { cloneBlocksWithFreshIds } from './clipboard'
 import { YjsDocument } from './yjs'
 import type { FlowchartElement } from './types'
@@ -38,6 +38,21 @@ it('restores every arrow direction while preserving upright text and square rect
   expect(legacyArrow.attrs.label.textWrap.text).toBe('SDK')
 })
 
+it('saves and restores rotated shapes, arrows and text without moving or resizing them', () => {
+  for (const shape of ['process', 'block-arrow', 'text'] as const) {
+    const node = new Shape.Rect(makeNode(shape, 20, 40, { width: 220, height: 120, label: 'Agent' }))
+    expect(node.getAngle()).toBe(0)
+    for (const angle of [30, 90, 225.5, 0]) {
+      node.rotate(angle, { absolute: true })
+      const saved = serializeDiagramNode(node)
+      const restored = new Shape.Rect(makeNode(shape, saved.x, saved.y, saved))
+      expect(saved).toMatchObject({ angle, x: 20, y: 40, width: 220, height: 120, label: 'Agent' })
+      expect(restored.getAngle()).toBe(angle)
+      expect(restored.clone().getAngle()).toBe(angle)
+    }
+  }
+})
+
 it('preserves manual and existing waypoint paths and connects to the visible node boundary', () => {
   const vertices = [{ x: 220, y: 120 }, { x: 220, y: 240 }]
   for (const routeMode of [undefined, 'manual'] as const) {
@@ -58,7 +73,7 @@ it('resets manual waypoints and terminal anchors back to automatic orthogonal ro
   expect((edge.getSource() as Shape.Edge.TerminalCellData).anchor).toBeUndefined()
 })
 
-it('syncs, copies and restores diagram direction, waypoints and terminal anchors together', () => {
+it('syncs, copies and restores diagram angles, direction, waypoints and terminal anchors together', () => {
   const diagram: FlowchartElement = { type: 'flowchart', id: 'flow', children: [{ text: '' }], nodes: [
     { id: 'a', shape: 'rectangle', label: 'Agent', x: 0, y: 0 },
     { id: 'b', shape: 'block-arrow', arrowDirection: 'right', label: 'SDK', x: 320, y: 0 },
@@ -68,7 +83,7 @@ it('syncs, copies and restores diagram direction, waypoints and terminal anchors
   try {
     const before = a.getValue(), next = structuredClone(before) as FlowchartElement[]
     next[0].nodes[1].arrowDirection = 'up'
-    Object.assign(next[0].nodes[1], { arrowRoute: 'step', arrowThickness: 24, arrowHeadSize: 60, arrowBend: 40 })
+    Object.assign(next[0].nodes[1], { angle: 45, arrowRoute: 'step', arrowThickness: 24, arrowHeadSize: 60, arrowBend: 40 })
     next[0].edges[0] = { ...next[0].edges[0], routeMode: 'manual', vertices: [{ x: 200, y: 160 }], sourceAnchor: { name: 'topLeft', args: { dx: '100%', dy: '50%', rotate: true } } }
     a.acceptEditorValue(before, next)
     Y.applyUpdate(b.doc, Y.encodeStateAsUpdate(a.doc))
@@ -79,7 +94,7 @@ it('syncs, copies and restores diagram direction, waypoints and terminal anchors
       expect(restored.getValue()).toEqual(a.getValue())
       let id = 0
       const copied = cloneBlocksWithFreshIds(restored.getValue() as FlowchartElement[], () => `copy-${++id}`)[0] as FlowchartElement
-      expect(copied.nodes[1]).toMatchObject({ arrowDirection: 'up', arrowRoute: 'step', arrowThickness: 24, arrowHeadSize: 60, arrowBend: 40 })
+      expect(copied.nodes[1]).toMatchObject({ angle: 45, arrowDirection: 'up', arrowRoute: 'step', arrowThickness: 24, arrowHeadSize: 60, arrowBend: 40 })
       expect(copied.edges[0]).toMatchObject({ source: copied.nodes[0].id, target: copied.nodes[1].id, vertices: next[0].edges[0].vertices, sourceAnchor: next[0].edges[0].sourceAnchor, routeMode: 'manual' })
     } finally { restored.destroy(); restored.doc.destroy() }
     a.undo(); expect(a.getValue()).toEqual(before)
