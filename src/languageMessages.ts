@@ -1,6 +1,7 @@
 /** Stable English identifiers; only values are localized. */
 export const uiChinese: Record<string, string> = {
   "diagram.basic": "常用元素",
+  "diagram.rotation": "旋转角度（°）",
   "diagram.rectangleShort": "长方形",
   "diagram.elbowArrow": "单折箭头",
   "diagram.elbowArrowHint": "可填色大箭头，单个直角折点",
@@ -111,6 +112,7 @@ export const uiChinese: Record<string, string> = {
   "formula.unconfigured": "尚未配置公式渲染器，当前显示源码。",
   "media.clickToPreview": "点击放大查看，右键可复制或下载",
   "media.clickToSelectThenPreview": "点击选中，使用预览按钮放大查看；右键可复制或下载",
+  "media.clickSelectedImageToPreview": "点击选中，再次点击放大查看；右键可复制或下载",
   "media.fullscreen": "全屏播放",
   "media.fullscreenUnavailable": "无法进入全屏，请检查浏览器或嵌入页面的全屏权限。",
   "media.imageVideo": "图片/视频",
@@ -327,7 +329,7 @@ export const uiChinese: Record<string, string> = {
   "ui.doubleClickToEditEnterForA": "双击文字直接编辑，Enter 换行；拖动控制点调整文本宽度。",
   "ui.textColor": "文字颜色",
   "ui.deleteText": "删除文字",
-  "ui.doubleClickToEditTextDragHandles": "双击节点直接编辑文字；拖动控制点调整尺寸。",
+  "ui.doubleClickToEditTextDragHandles": "双击节点编辑文字；拖动控制点调整尺寸或旋转。",
   "ui.fill": "填充",
   "ui.textLabel": "文字",
   "ui.borderWidth": "边框粗细",
@@ -469,6 +471,7 @@ export const uiChinese: Record<string, string> = {
 }
 export const uiEnglish: Record<string, string> = {
   "diagram.basic": "Common elements",
+  "diagram.rotation": "Rotation angle (°)",
   "diagram.rectangleShort": "Rectangle",
   "diagram.elbowArrow": "Elbow arrow",
   "diagram.elbowArrowHint": "Filled arrow with one right-angle bend",
@@ -579,6 +582,7 @@ export const uiEnglish: Record<string, string> = {
   "formula.unconfigured": "No formula renderer configured. Showing source.",
   "media.clickToPreview": "Click to enlarge; right-click to copy or download",
   "media.clickToSelectThenPreview": "Click to select; use the preview button to enlarge. Right-click to copy or download",
+  "media.clickSelectedImageToPreview": "Click to select; click again to enlarge. Right-click to copy or download",
   "media.fullscreen": "Fullscreen",
   "media.fullscreenUnavailable": "Unable to enter fullscreen. Check the browser or embedding page's fullscreen permissions.",
   "media.imageVideo": "Image / video",
@@ -795,7 +799,7 @@ export const uiEnglish: Record<string, string> = {
   "ui.doubleClickToEditEnterForA": "Double-click to edit. Enter for a new line; drag handles to resize.",
   "ui.textColor": "Text color",
   "ui.deleteText": "Delete text",
-  "ui.doubleClickToEditTextDragHandles": "Double-click to edit text; drag handles to resize.",
+  "ui.doubleClickToEditTextDragHandles": "Double-click to edit text; drag handles to resize or rotate.",
   "ui.fill": "Fill",
   "ui.textLabel": "Text",
   "ui.borderWidth": "Border width",

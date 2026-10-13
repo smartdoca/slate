@@ -107,7 +107,7 @@ it('clears image selection when clicking blank space outside the document', asyn
   } finally { await act(async () => root.unmount()); container.remove() }
 })
 
-it('keeps editable images selected on repeated clicks and previews through the button', async () => {
+it('selects editable images first, then previews on subsequent clicks and through the button', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
   const ref = createRef<RichTextEditorHandle>()
   const container = document.createElement('div'); document.body.append(container)
@@ -123,6 +123,21 @@ it('keeps editable images selected on repeated clicks and previews through the b
     expect(document.querySelector('.sk-media-lightbox')).toBeNull()
     expect(figure.classList.contains('is-selected')).toBe(true)
     expect(ref.current!.editor.selection).toEqual({ anchor: { path: [0, 0], offset: 0 }, focus: { path: [0, 0], offset: 0 } })
+    await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(document.querySelector('.sk-media-lightbox img')?.getAttribute('src')).toBe('/test.png')
+    await act(async () => { document.querySelector('.sk-media-lightbox-viewport')!.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(document.querySelector('.sk-media-lightbox')).toBeNull()
+    // Closing the preview keeps the image selected, so another click can reopen it.
+    await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true })) })
+    expect(document.querySelector('.sk-media-lightbox')).toBeNull()
+    await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    expect(document.querySelector('.sk-media-lightbox img')?.getAttribute('src')).toBe('/test.png')
+    await act(async () => { document.querySelector('.sk-media-lightbox-viewport')!.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+    await act(async () => { document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    expect(figure.classList.contains('is-selected')).toBe(false)
     await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     expect(document.querySelector('.sk-media-lightbox')).toBeNull()
