@@ -58,7 +58,7 @@ it('preserves manual and existing waypoint paths and connects to the visible nod
   for (const routeMode of [undefined, 'manual'] as const) {
     const edge = new Shape.Edge(makeEdge({ source: 'a', target: 'b', sourcePort: 'right-2', targetPort: 'left-2', routeMode, vertices }))
     expect(edge.getVertices()).toEqual(vertices)
-    expect(edge.getRouter()?.name).toBe('normal')
+    expect(edge.getRouter()?.name).toBe('orth')
     expect((edge.getSource() as Shape.Edge.TerminalCellData).connectionPoint).toMatchObject({ name: 'boundary', args: { selector: 'body', stroked: false } })
   }
   expect(new Shape.Edge(makeEdge({ source: 'a', target: 'b', lineType: 'straight', vertices })).getVertices()).toEqual([])

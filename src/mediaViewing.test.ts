@@ -48,7 +48,7 @@ it('keeps flowcharts and mind maps selected on repeated clicks and previews thro
   const root = createRoot(container)
   try {
     await act(async () => root.render(createElement(RichTextEditor, { initialValue: [
-      { type: 'flowchart', id: 'flow', nodes: [], edges: [], previewSvg: diagramPreview, previewVersion: 8, children: [{ text: '' }] },
+      { type: 'flowchart', id: 'flow', nodes: [], edges: [], previewSvg: diagramPreview, previewVersion: 9, children: [{ text: '' }] },
       { type: 'mindmap', id: 'mind', mindData: { direction: 2, nodeData: { id: 'root', topic: '中心', expanded: true, children: [] } }, previewSvg: diagramPreview, previewVersion: 5, children: [{ text: '' }] },
     ] })))
     for (const figure of Array.from(container.querySelectorAll('.sk-diagram-figure'))) {
