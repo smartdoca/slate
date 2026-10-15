@@ -132,7 +132,14 @@ export function DiagramWorkspace(props: WorkspaceProps) {
     })
   }
   const styleSwatches = <div className="sk-draw-presets">{props.presets.slice(swatchPage * 8, swatchPage * 8 + 8).map(preset => <button key={preset.name} title={t(preset.name)} aria-label={t(preset.name)} style={{ background: preset.fillColor, borderColor: preset.color }} onClick={() => updateNode(preset)} />)}<div className="sk-draw-preset-pages">{Array.from({ length: Math.ceil(props.presets.length / 8) }, (_, index) => <button key={index} aria-label={t('diagram.stylePage', { page: index + 1 })} aria-pressed={swatchPage === index} onClick={() => setSwatchPage(index)} />)}</div></div>
-  return <div ref={root} className="sk-diagram-dialog sk-drawio-editor" role="dialog" aria-modal="true" aria-label={t('diagram.workspace')} onKeyDown={event => {
+  return <div ref={root} className="sk-diagram-dialog sk-drawio-editor" role="dialog" aria-modal="true" aria-label={t('diagram.workspace')} onKeyDownCapture={event => {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 's' || event.nativeEvent.isComposing) return
+    event.preventDefault(); event.stopPropagation()
+    if (event.repeat || props.saving) return
+    // Commit property drafts and inline labels before exporting the graph.
+    if (document.activeElement instanceof HTMLElement && root.current?.contains(document.activeElement)) document.activeElement.blur()
+    props.save()
+  }} onKeyDown={event => {
     event.stopPropagation()
     if (event.key !== 'Tab') return
     const scope = root.current?.querySelector('.sk-draw-library-modal') || root.current
@@ -140,10 +147,10 @@ export function DiagramWorkspace(props: WorkspaceProps) {
     const index = items.indexOf(document.activeElement as HTMLElement)
     if (index < 0 || (event.shiftKey ? index === 0 : index === items.length - 1)) { event.preventDefault(); items[event.shiftKey ? items.length - 1 : 0]?.focus() }
   }} onDragStart={event => event.stopPropagation()} onDragEnd={event => event.stopPropagation()}>
-    <header className="sk-draw-header"><div className="sk-draw-logo" aria-hidden="true"><Network size={27} strokeWidth={2.5} /></div><div className="sk-draw-heading"><div className="sk-draw-document-title">{t('diagram.untitled')}</div><nav aria-label={t('diagram.menuBar')}>
+    <header className="sk-draw-header"><div className="sk-draw-heading"><nav aria-label={t('diagram.menuBar')}>
       {['file', 'edit', 'view', 'arrange', 'other', 'help'].map(name => <button data-draw-menu={name} aria-haspopup="menu" aria-expanded={menu === name} key={name} onClick={() => toggleMenu(name)}>{t(`diagram.menu.${name}`)}</button>)}
       <span className={`sk-draw-save-status ${props.dirty ? 'is-dirty' : ''}`}>{props.dirty ? t('diagram.unsaved') : ''}</span>{props.error && <span className="sk-draw-save-error" role="alert">{props.error}</span>}
-    </nav></div><div className="sk-draw-header-actions"><button className="sk-draw-save" disabled={props.saving} onClick={props.save}><Save size={15} />{t(props.saving ? 'diagram.saving' : 'ui.saveAndReturn')}</button>{iconButton(t('ui.closeDiagramEditor'), <X size={19} />, requestClose)}</div></header>
+    </nav></div><div className="sk-draw-header-actions"><button className="sk-draw-save" aria-keyshortcuts="Control+S Meta+S" title="Ctrl+S / ⌘S" disabled={props.saving} onClick={props.save}><Save size={15} />{t(props.saving ? 'diagram.saving' : 'ui.saveAndReturn')}</button>{iconButton(t('ui.closeDiagramEditor'), <X size={19} />, requestClose)}</div></header>
     <div className="sk-draw-toolbar" role="toolbar" aria-label={t('diagram.toolbar')}>
       {iconButton(t('diagram.toggleShapes'), <PanelLeft />, () => setLeftVisible(value => !value), false, leftVisible)}<i />
       <button className="sk-draw-zoom" data-draw-menu="zoom" aria-label={t('diagram.zoom')} aria-haspopup="menu" aria-expanded={menu === 'zoom'} onClick={() => toggleMenu('zoom')}>{props.zoom}% <ChevronDown size={12} /></button><i />

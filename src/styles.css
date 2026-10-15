@@ -613,10 +613,8 @@
 .sk-drawio-editor button { cursor: pointer; }
 .sk-drawio-editor button:disabled { opacity: .35; cursor: default; }
 .sk-drawio-editor button:focus-visible, .sk-drawio-editor summary:focus-visible { outline: 2px solid #61b3e4; outline-offset: -2px; }
-.sk-drawio-editor.sk-diagram-dialog > .sk-draw-header { height: 64px; padding: 7px 12px 5px 16px; gap: 14px; border-bottom: 1px solid var(--draw-border); background: var(--draw-chrome); align-items: flex-start; }
+.sk-drawio-editor.sk-diagram-dialog > .sk-draw-header { height: 40px; padding: 5px 12px 5px 16px; gap: 14px; border-bottom: 1px solid var(--draw-border); background: var(--draw-chrome); align-items: center; }
 .sk-drawio-editor.sk-diagram-dialog > .sk-draw-header > .sk-draw-heading { display: flex; flex: 1; min-width: 0; align-items: stretch; flex-direction: column; gap: 1px; }
-.sk-drawio-editor .sk-draw-logo { width: 34px; height: 38px; margin-top: 4px; display: grid; place-items: center; flex: 0 0 auto; color: #fff; background: #f2952c; border-radius: 3px; }
-.sk-drawio-editor .sk-draw-document-title { height: 26px; color: #333; font-size: 20px; line-height: 26px; }
 .sk-drawio-editor .sk-draw-heading nav { display: flex; align-items: center; gap: 0; height: 24px; white-space: nowrap; }
 .sk-drawio-editor .sk-draw-heading nav > button { min-width: 43px; height: 24px; padding: 0 7px; border: 0; background: transparent; border-radius: 0; font-size: 13px; }
 .sk-drawio-editor .sk-draw-heading nav > button:first-child { margin-left: -7px; }
@@ -639,7 +637,7 @@
 .sk-drawio-editor .sk-draw-color-tool { position: relative; width: 30px; height: 28px; display: grid; place-items: center; cursor: pointer; }
 .sk-drawio-editor .sk-draw-color-tool > input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 .sk-drawio-editor .sk-draw-color-tool > span { position: absolute; left: 6px; right: 6px; bottom: 1px; height: 3px; border: 1px solid #aaa; }
-.sk-drawio-editor .sk-flow-workspace { height: calc(100% - 132px); min-height: 0; display: flex; }
+.sk-drawio-editor .sk-flow-workspace { height: calc(100% - 108px); min-height: 0; display: flex; }
 .sk-drawio-editor .sk-flow-palette { position: relative; flex: 0 0 232px; min-width: 0; display: flex; flex-direction: column; padding: 0; border-right: 1px solid var(--draw-border); overflow: hidden; background: var(--draw-chrome); }
 .sk-drawio-editor .sk-draw-search { display: flex; align-items: center; flex: 0 0 auto; height: 29px; margin: 9px 9px 8px; padding: 0 9px; gap: 7px; background: #fff; border: 1px solid #d6dade; border-radius: 16px; }
 .sk-drawio-editor .sk-draw-search > svg { order: 2; flex-shrink: 0; }
@@ -749,7 +747,7 @@
 @keyframes sk-draw-enter { from { opacity: .75; } to { opacity: 1; } }
 @keyframes sk-draw-menu-enter { from { opacity: 0; translate: 0 -2px; } to { opacity: 1; translate: 0 0; } }
 @media (max-width: 1050px) { .sk-drawio-editor .sk-flow-palette { flex-basis: 200px; }.sk-drawio-editor .sk-flow-inspector { flex-basis: 220px; }.sk-drawio-editor .sk-draw-save-status, .sk-drawio-editor .sk-draw-canvas-hint { display: none; }.sk-drawio-editor .sk-draw-toolbar { padding: 0 8px; }.sk-drawio-editor .sk-draw-toolbar > i { margin: 0 3px; } }
-@media (max-width: 700px) { .sk-drawio-editor .sk-flow-palette { flex-basis: 162px; }.sk-drawio-editor .sk-flow-inspector { flex-basis: 190px; }.sk-drawio-editor .sk-draw-library > .sk-draw-shapes { grid-template-columns: repeat(4, 1fr); }.sk-drawio-editor .sk-draw-document-title { font-size: 17px; }.sk-drawio-editor .sk-draw-logo { display: none; }.sk-drawio-editor .sk-draw-header-actions .sk-draw-save { max-width: 100px; font-size: 10px; }.sk-drawio-editor .sk-draw-menu { max-width: calc(100vw - 24px); left: 12px !important; } }
+@media (max-width: 700px) { .sk-drawio-editor .sk-flow-palette { flex-basis: 162px; }.sk-drawio-editor .sk-flow-inspector { flex-basis: 190px; }.sk-drawio-editor .sk-draw-library > .sk-draw-shapes { grid-template-columns: repeat(4, 1fr); }.sk-drawio-editor .sk-draw-header-actions .sk-draw-save { max-width: 100px; font-size: 10px; }.sk-drawio-editor .sk-draw-menu { max-width: calc(100vw - 24px); left: 12px !important; } }
 @media (prefers-reduced-motion: reduce) { .sk-drawio-editor, .sk-drawio-editor .sk-draw-menu { animation: none; }.sk-drawio-editor .sk-draw-save, .sk-drawio-editor .sk-draw-presets button, .sk-drawio-editor .sk-draw-library > summary::before { transition: none; } }
 .sk-drawio-editor .x6-node { filter: none; }
 .sk-drawio-editor .sk-draw-presets > .sk-draw-preset-pages { display: flex; grid-column: 1 / -1; justify-content: center; gap: 6px; padding-top: 4px; }
