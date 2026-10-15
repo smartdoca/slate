@@ -321,14 +321,19 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
   const fitCanvas = (current: Graph) => fitGraphToCanvas(current, canvasRef.current, settingsRef.current.pageView ? diagramPaperSize(settingsRef.current).height : undefined)
   const [settingsDirty, setSettingsDirty] = useState(false), [pan, setPan] = useState(false), [saving, setSaving] = useState(false), [saveError, setSaveError] = useState<string | null>(null)
   const [defaultNode, setDefaultNode] = useState<Partial<NodeData>>({ color: '#000000', fillColor: '#ffffff', textColor: '#000000', borderWidth: 1, fontSize: 12, fontFamily: 'Helvetica' })
-  const paperRef = useRef<HTMLDivElement>(null), refreshFrame = useRef<number | null>(null), spaceDown = useRef(false)
+  const paperRef = useRef<HTMLDivElement>(null), spaceDown = useRef(false)
   const rotatePress = useRef<{ node: Node; angle: number; x: number; y: number; moved: boolean } | null>(null)
   const panDrag = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null)
   const commandRef = useRef<(command: DiagramCommand, value?: string | number) => void>(() => {})
-  const saveRef = useRef<() => void>(() => {})
   const editRef = useRef<(cell: Cell, text?: string) => void>(() => {})
-  const scheduleRefresh = () => { if (refreshFrame.current === null) refreshFrame.current = requestAnimationFrame(() => { refreshFrame.current = null; setRevision(value => value + 1) }) }
-  const syncPaper = (graph: Graph) => { const paper = paperRef.current; if (paper) paper.style.transform = `${diagramPageTransform(graph.zoom(), graph.translate())} translate(${paper.dataset.pageX || 0}px, ${paper.dataset.pageY || 0}px)` }
+  const syncPaper = (graph: Graph) => {
+    const paper = paperRef.current
+    if (!paper) return
+    const bounds = diagramPageBounds(diagramPaperSize(settingsRef.current), graph.getCellsBBox(graph.getCells()))
+    paper.style.width = `${bounds.width}px`; paper.style.height = `${bounds.height}px`
+    paper.dataset.pageX = String(bounds.x); paper.dataset.pageY = String(bounds.y)
+    paper.style.transform = `${diagramPageTransform(graph.zoom(), graph.translate())} translate(${bounds.x}px, ${bounds.y}px)`
+  }
   const changeSettings = (patch: Partial<DiagramCanvasSettings>) => { setSettings(value => ({ ...value, ...patch })); setSettingsDirty(true) }
   const [zoomPercent, setZoomPercent] = useState(100)
   const [edgeDefaults, setEdgeDefaults] = useState<EdgeData>({ lineType: 'step', lineStyle: 'solid', arrow: 'end', color: '#000000', thickness: 1, fontSize: 12, opacity: 1 })
@@ -338,12 +343,21 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
     if (!canvasRef.current || !minimapRef.current) return
     // Segment handles must read the route produced by the current model update.
     const graph = new Graph({ container: canvasRef.current, autoResize: true, async: false, magnetThreshold: 2, background: { color: 'transparent' }, grid: { visible: false, type: 'doubleMesh', size: settings.gridSize, args: [{ color: '#f1f1f1', thickness: 1 }, { color: '#dfdfdf', thickness: 1, factor: 5 }] }, mousewheel: { enabled: true, zoomAtMousePosition: true, modifiers: ['ctrl', 'meta'], minScale: .1, maxScale: 4 }, panning: { enabled: true, eventTypes: ['mouseWheel'] }, connecting: { snap: { radius: 14 }, allowBlank: true, allowNode: true, allowLoop: false, allowEdge: false, highlight: true, connectionPoint: bodyConnectionPoint, router: { name: 'manhattan', args: { padding: 8, step: 8, perpendicular: false } }, connector: { name: 'rounded', args: { radius: 12 } }, createEdge: () => new Shape.Edge(makeEdge({ source: '', target: '' }, edgeDefaultsRef.current)) } })
+    // Keep the pending frame local to this graph lifecycle. StrictMode replays
+    // setup after cancelling the first frame; a shared ref would stay blocked.
+    let refreshFrame: number | null = null
+    const scheduleRefresh = () => { if (refreshFrame === null) refreshFrame = requestAnimationFrame(() => { refreshFrame = null; if (graphRef.current !== graph) return; syncPaper(graph); setRevision(value => value + 1) }) }
     graph.use(new Selection({ enabled: true, multiple: true, rubberband: true, rubberEdge: true, strict: true, movable: true, modifiers: null, multipleSelectionModifiers: ['shift', 'ctrl', 'meta'], showNodeSelectionBox: false })); graph.use(new Transform({ resizing: { enabled: true, minWidth: 20, minHeight: 20, orthogonal: true, preserveAspectRatio: node => node.getData<NodeData>().diagramShape === 'circle' || node.getData<NodeData>().aspectRatioLocked }, rotating: { enabled: true, grid: 1 } })); graph.use(new Snapline({ enabled: true, sharp: true })); graph.use(new History({ enabled: true, beforeAddCommand: (_event, args) => !args || (!("options" in args && args.options?.ignoreHistory) && !("key" in args && args.key === 'tools')) })); graph.use(new Clipboard({ enabled: true, useLocalStorage: false })); graph.use(new Keyboard({ enabled: true, global: true, guard: event => { const target = event.target as HTMLElement | null; const editable = target?.closest('input, textarea, select, [contenteditable="true"]'); return !editable?.closest('.sk-diagram-dialog') } })); graph.use(new MiniMap({ container: minimapRef.current, width: 168, height: 106, padding: 8 })); graph.use(new Export())
     graph.on('scale', ({ sx }) => setZoomPercent(Math.round(sx * 100)))
     graph.on('translate', () => { syncPaper(graph); scheduleRefresh() })
     graph.on('scale', () => { syncPaper(graph); scheduleRefresh() })
     graph.on('node:change:position', scheduleRefresh)
     graph.on('node:change:angle', scheduleRefresh)
+    graph.on('cell:added', scheduleRefresh)
+    graph.on('cell:removed', scheduleRefresh)
+    graph.on('edge:change:source', scheduleRefresh)
+    graph.on('edge:change:target', scheduleRefresh)
+    graph.on('edge:change:vertices', scheduleRefresh)
     graph.on('history:change', scheduleRefresh)
     let groupTransform: { id: string; geometry: ReturnType<typeof captureDiagramGroup> } | null = null
     graph.on('node:resize', ({ node }) => { if (node.getChildren()?.length) groupTransform = { id: node.id, geometry: captureDiagramGroup(node) } })
@@ -353,7 +367,7 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
     graph.on('node:resized', () => { groupTransform = null }); graph.on('node:rotated', () => { groupTransform = null })
     graph.on('node:change:size', ({ node }) => {
       if (node.getData<NodeData>().diagramShape === 'block-arrow') node.attr(nodeAttrs(node.getData<NodeData>(), node.size()), { ignoreHistory: true })
-      setRevision(value => value + 1)
+      scheduleRefresh()
     })
     graph.fromJSON({ nodes: element.nodes.map(node => makeNode(node.shape || 'process', node.x, node.y, node)), edges: element.edges.map(edge => makeEdge(edge)) }); requestAnimationFrame(() => {
       if (graphRef.current !== graph) return
@@ -474,7 +488,6 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
         setRevision(value => value + 1)
         return
       }
-      if (mod && key === 's') { event.preventDefault(); event.stopPropagation(); saveRef.current(); return }
       if (mod && key === 'g') { event.preventDefault(); commandRef.current(event.shiftKey ? 'ungroup' : 'group'); return }
       if (event.code === 'Space') { event.preventDefault(); spaceDown.current = true; canvasRef.current?.classList.add('is-panning'); return }
       const currentCell = graph.getSelectedCells().length === 1 ? graph.getSelectedCells()[0] : null
@@ -532,7 +545,7 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
     }
     for (const type of ['copy', 'cut', 'paste']) document.addEventListener(type, clipboardEvent as EventListener, true)
     graphRef.current = graph; setRevision(value => value + 1)
-    return () => { if (quickDrag.current?.edge) graph.stopBatch('draw-connector'); quickDrag.current = null; document.removeEventListener('keydown', deleteSelected, true); document.removeEventListener('keyup', stopSpacePan); window.removeEventListener('blur', stopBlurPan); if (refreshFrame.current !== null) cancelAnimationFrame(refreshFrame.current); for (const type of ['copy', 'cut', 'paste']) document.removeEventListener(type, clipboardEvent as EventListener, true); graph.dispose(); graphRef.current = null }
+    return () => { if (quickDrag.current?.edge) graph.stopBatch('draw-connector'); quickDrag.current = null; document.removeEventListener('keydown', deleteSelected, true); document.removeEventListener('keyup', stopSpacePan); window.removeEventListener('blur', stopBlurPan); if (refreshFrame !== null) cancelAnimationFrame(refreshFrame); for (const type of ['copy', 'cut', 'paste']) document.removeEventListener(type, clipboardEvent as EventListener, true); graph.dispose(); graphRef.current = null }
   }, [])
   useEffect(() => {
     const current = graphRef.current; if (!current) return
@@ -802,7 +815,7 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
     }
     canvasRef.current?.focus({ preventScroll: true }); refresh()
   }
-  commandRef.current = runCommand; saveRef.current = save
+  commandRef.current = runCommand
   const commonTypes: DiagramNodeType[] = ['rectangle', 'process', 'text', 'ellipse', 'circle', 'subprocess', 'decision', 'data', 'hexagon', 'triangle', 'database', 'cloud', 'document', 'swimlane', 'cube', 'chevron', 'trapezoid', 'paper-tape', 'note', 'folder', 'callout', 'actor', 'crescent', 'delay', 'display', 'multiple-documents', 'block-arrow', 'server', 'browser', 'star', 'cross', 'group']
   const generalShapes = commonTypes.map(type => ({ ...SHAPES.find(shape => shape.type === type)!, group: 'ui.general', ...(type === 'process' ? { label: 'diagram.roundedRectangle', hint: 'diagram.roundedRectangleHint', preset: { rounded: true } } : {}) }))
   const shapes = [...SHAPES.filter(shape => shape.group !== 'ui.general'), ...generalShapes, ...SHAPES.filter(shape => shape.group === 'ui.general' && shape.preset)]

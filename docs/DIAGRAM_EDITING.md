@@ -47,6 +47,16 @@ New optional document fields are `FlowchartElement.canvasSettings`, node font/ef
 
 This is alignment of the native flowchart workspace and its core editing interactions. The complete diagrams.net stencil catalog, its file format/importer, gradients and every advanced formatting command are not provided.
 
+## Canvas expansion and save shortcuts (0.4.17)
+
+The workspace header starts with the menu bar; the decorative logo and untitled-document heading are removed. Ctrl+S / Cmd+S saves the native diagram and returns to the document editor from the canvas, property fields, inline labels and open menus. The focused field commits before export; repeated keydown events do not start another save.
+
+Paper boundaries refresh while elements move, resize or rotate and while free connector endpoints/waypoints change. The queued animation frame belongs to each graph lifecycle, so React StrictMode setup/cleanup replay cannot leave a cancelled frame blocking later updates. Grid paper expands by whole paper-size tiles in all four directions without changing graph coordinates or automatically changing zoom.
+
+Browser acceptance reproduced stale paper after moving a node from x=410 to x=1000, then verified automatic expansion from 827 to 1654 points without an extra toolbar action. Moving below the page expanded its height from 1169 to 2338; negative positions expanded its origin to (-827, -1169). A real pointer drag beyond the visible right edge also expanded the grid immediately. Ctrl+S saved an unblurred x=450 property draft and closed the workspace; reopening retained 450. Cmd+S then saved the restored x=410 draft and returned to the document. Temporary test geometry was restored.
+
+Two keyboard regression cases cover both modifiers from inline labels, numeric properties and menus, draft commit ordering, browser-default prevention and held-key suppression. Release checks passed 51 files / 199 tests, TypeScript and the production library build. The first full-suite run had an unrelated image-caption focus assertion fail; its isolated rerun and the final complete suite passed without changing image-caption code. Local browser evidence is under `test-results/diagram-canvas-save/` (ignored by Git).
+
 ## Verification
 
 Targeted tests cover code focus/toolbar, diagram text and geometry, rotation persistence and collaboration, arrow bounds in every route and direction, bend coordinate mapping, template references, insertion placement, clipboard, media viewing, locales and conversion. Browser checks use an isolated localhost origin and cover text commit/cancel, short port connections, waypoint dragging and reload, background groups, complete/partial rubber-band selection, grid toggling, language keyboard navigation and clipboard contents. Added checks verify dragging a filled-arrow bend, changing shaft/head size, retaining the same geometry after save/reload and resize, and undoing/redoing the whole architecture template. Rotation checks cover exact angle entry, dragging the rotation handle, undo/redo, duplication, save/reload and dragging a bend on a rotated arrow. Image checks confirm first-click selection and second-click preview.
