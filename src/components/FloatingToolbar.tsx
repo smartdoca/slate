@@ -35,7 +35,11 @@ export function FloatingToolbar() {
   panelRef.current = panel
   useEffect(() => {
     let frame = 0
+    let pointerSelecting = false
+    const selectionKeys = new Set<string>()
     const update = (force = false) => {
+      // Selection changes also fire during dragging and repeated keyboard selection.
+      if (pointerSelecting || selectionKeys.size > 0) return setVisible(false)
       // The link field takes focus, and paste/scroll both emit selectionchange.
       // Keep that field mounted until the user closes it.
       const linkFieldOpen = panelRef.current === 'link' || Boolean(ref.current?.querySelector('.sk-link-popover input') && document.activeElement instanceof HTMLElement && ref.current.contains(document.activeElement))
@@ -84,14 +88,68 @@ export function FloatingToolbar() {
     }
     const selectionChanged = () => schedule()
     document.addEventListener('selectionchange', selectionChanged)
-    const unlock = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) { positionLocked.current = false; setPanel(null) } }
-    document.addEventListener('pointerdown', unlock, true)
+    const hideWhileSelecting = () => { cancelAnimationFrame(frame); setVisible(false) }
+    const isEditorTarget = (target: EventTarget | null) => target instanceof Node && DOMEditor.toDOMNode(editor, editor).contains(target)
+    const startPointerSelection = (event: PointerEvent) => {
+      if (ref.current?.contains(event.target as Node)) return
+      positionLocked.current = false
+      setPanel(null)
+      if (event.button === 0 && isEditorTarget(event.target)) {
+        pointerSelecting = true
+        hideWhileSelecting()
+      }
+    }
+    const endPointerSelection = () => {
+      if (!pointerSelecting) return
+      pointerSelecting = false
+      schedule()
+    }
+    const startKeyboardSelection = (event: KeyboardEvent) => {
+      if (!isEditorTarget(event.target)) return
+      const extendsSelection = event.shiftKey && /^(Arrow(Left|Right|Up|Down)|Home|End|PageUp|PageDown)$/.test(event.key)
+      const selectsAll = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a'
+      if (!extendsSelection && !selectsAll) return
+      selectionKeys.add(event.key.toLowerCase())
+      positionLocked.current = false
+      setPanel(null)
+      hideWhileSelecting()
+    }
+    const endKeyboardSelection = (event: KeyboardEvent) => {
+      // Some browsers omit keyup for keys pressed while Meta is held.
+      if (['Shift', 'Control', 'Meta'].includes(event.key) && selectionKeys.size > 0) {
+        selectionKeys.clear()
+        schedule()
+      } else if (selectionKeys.delete(event.key.toLowerCase())) schedule()
+    }
+    const resetSelectionGesture = () => {
+      pointerSelecting = false
+      selectionKeys.clear()
+      hideWhileSelecting()
+    }
+    document.addEventListener('pointerdown', startPointerSelection, true)
+    document.addEventListener('pointerup', endPointerSelection, true)
+    document.addEventListener('pointercancel', endPointerSelection, true)
+    document.addEventListener('keydown', startKeyboardSelection, true)
+    document.addEventListener('keyup', endKeyboardSelection, true)
+    window.addEventListener('blur', resetSelectionGesture)
     document.addEventListener('sk:table-range-selection', updateTableRange)
     const reposition = () => schedule(true)
     window.addEventListener('scroll', reposition, true)
     window.addEventListener('resize', reposition)
     schedule()
-    return () => { cancelAnimationFrame(frame); document.removeEventListener('selectionchange', selectionChanged); document.removeEventListener('pointerdown', unlock, true); document.removeEventListener('sk:table-range-selection', updateTableRange); window.removeEventListener('scroll', reposition, true); window.removeEventListener('resize', reposition) }
+    return () => {
+      cancelAnimationFrame(frame)
+      document.removeEventListener('selectionchange', selectionChanged)
+      document.removeEventListener('pointerdown', startPointerSelection, true)
+      document.removeEventListener('pointerup', endPointerSelection, true)
+      document.removeEventListener('pointercancel', endPointerSelection, true)
+      document.removeEventListener('keydown', startKeyboardSelection, true)
+      document.removeEventListener('keyup', endKeyboardSelection, true)
+      window.removeEventListener('blur', resetSelectionGesture)
+      document.removeEventListener('sk:table-range-selection', updateTableRange)
+      window.removeEventListener('scroll', reposition, true)
+      window.removeEventListener('resize', reposition)
+    }
   }, [editor])
   const keepSelection = (event: ReactMouseEvent) => { positionLocked.current = true; if (!(event.target as HTMLElement).closest('input')) event.preventDefault() }
   const restoreSelection = () => {
