@@ -604,3 +604,176 @@
 .sk-flow-palette .sk-flow-templates button { width: 100%; height: 68px; padding: 6px; gap: 4px; background: #fbfcff; border-color: #e1e6f2; cursor: pointer; }
 .sk-flow-palette .sk-flow-templates button svg { width: 100%; height: 32px; }
 .sk-flow-palette .sk-flow-templates button span { max-width: 100%; font-size: 10px; line-height: 14px; }
+
+/* Drawing workspace: draw.io's compact chrome, paper view and contextual format panel. */
+.sk-diagram-modal:has(> .sk-drawio-editor) { padding: 0; background: #ececec; backdrop-filter: none; }
+.sk-diagram-dialog.sk-drawio-editor { --draw-chrome: #f1f3f5; --draw-border: #d9dcdf; --draw-ink: #333; --draw-blue: #4eafe0; width: 100vw; height: 100dvh; max-width: none; max-height: none; border-radius: 0; box-shadow: none; color: var(--draw-ink); background: var(--draw-chrome); font: 12px/1.4 Helvetica, Arial, "PingFang SC", sans-serif; animation: sk-draw-enter .14s ease-out; }
+.sk-drawio-editor *, .sk-drawio-editor *::before, .sk-drawio-editor *::after { box-sizing: border-box; }
+.sk-drawio-editor button, .sk-drawio-editor select, .sk-drawio-editor input { font: inherit; color: inherit; }
+.sk-drawio-editor button { cursor: pointer; }
+.sk-drawio-editor button:disabled { opacity: .35; cursor: default; }
+.sk-drawio-editor button:focus-visible, .sk-drawio-editor summary:focus-visible { outline: 2px solid #61b3e4; outline-offset: -2px; }
+.sk-drawio-editor.sk-diagram-dialog > .sk-draw-header { height: 64px; padding: 7px 12px 5px 16px; gap: 14px; border-bottom: 1px solid var(--draw-border); background: var(--draw-chrome); align-items: flex-start; }
+.sk-drawio-editor.sk-diagram-dialog > .sk-draw-header > .sk-draw-heading { display: flex; flex: 1; min-width: 0; align-items: stretch; flex-direction: column; gap: 1px; }
+.sk-drawio-editor .sk-draw-logo { width: 34px; height: 38px; margin-top: 4px; display: grid; place-items: center; flex: 0 0 auto; color: #fff; background: #f2952c; border-radius: 3px; }
+.sk-drawio-editor .sk-draw-document-title { height: 26px; color: #333; font-size: 20px; line-height: 26px; }
+.sk-drawio-editor .sk-draw-heading nav { display: flex; align-items: center; gap: 0; height: 24px; white-space: nowrap; }
+.sk-drawio-editor .sk-draw-heading nav > button { min-width: 43px; height: 24px; padding: 0 7px; border: 0; background: transparent; border-radius: 0; font-size: 13px; }
+.sk-drawio-editor .sk-draw-heading nav > button:first-child { margin-left: -7px; }
+.sk-drawio-editor .sk-draw-heading nav > button:hover, .sk-drawio-editor [data-draw-menu][aria-expanded="true"] { background: #e2e5e8; }
+.sk-drawio-editor .sk-draw-save-status { margin-left: 14px; padding: 2px 8px; color: #7d8288; font-size: 11px; }
+.sk-drawio-editor .sk-draw-save-status.is-dirty { color: #8a5748; background: #f5ded9; border-radius: 2px; }
+.sk-drawio-editor.sk-diagram-dialog > .sk-draw-header .sk-draw-header-actions { display: flex; gap: 8px; align-items: center; }
+.sk-drawio-editor .sk-draw-header-actions > button { height: 29px; border: 0; border-radius: 3px; }
+.sk-drawio-editor .sk-draw-save { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 5px 12px; color: #285369; background: #c8e8fa; border: 1px solid #b9dff5; border-radius: 3px; font-weight: 600; transition: background .1s, transform .1s; }
+.sk-drawio-editor .sk-draw-save:hover { background: #b6e0f7; }
+.sk-drawio-editor .sk-draw-save:active { transform: translateY(1px); background: #9bd2f1; }
+.sk-drawio-editor .sk-draw-header-actions > button:last-child { width: 29px; padding: 0; display: grid; place-items: center; background: transparent; }
+.sk-drawio-editor .sk-draw-toolbar { height: 36px; display: flex; align-items: center; gap: 2px; padding: 0 16px; border-bottom: 1px solid var(--draw-border); white-space: nowrap; overflow-x: auto; scrollbar-width: none; background: var(--draw-chrome); }
+.sk-drawio-editor .sk-draw-toolbar > button, .sk-drawio-editor .sk-draw-text-tools button, .sk-drawio-editor .sk-draw-layer-tools button, .sk-drawio-editor .sk-draw-align-tools button { min-width: 29px; height: 28px; padding: 4px 6px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid transparent; border-radius: 2px; background: transparent; }
+.sk-drawio-editor .sk-draw-toolbar button > svg, .sk-drawio-editor .sk-draw-text-tools button svg, .sk-drawio-editor .sk-draw-layer-tools svg, .sk-drawio-editor .sk-draw-align-tools svg { width: 17px; height: 17px; stroke-width: 1.8; }
+.sk-drawio-editor .sk-draw-toolbar button:hover:not(:disabled), .sk-drawio-editor .sk-draw-toolbar .is-active, .sk-drawio-editor .sk-draw-text-tools button:hover, .sk-drawio-editor .sk-draw-text-tools button.is-active { background: #e2e7eb; border-color: #d5dde3; }
+.sk-drawio-editor .sk-draw-toolbar > i { height: 18px; width: 1px; flex: 0 0 1px; margin: 0 7px; background: #dfe2e5; }
+.sk-drawio-editor .sk-draw-toolbar > .sk-draw-zoom { min-width: 73px; font-size: 13px; }
+.sk-drawio-editor .sk-draw-toolbar-spacer { flex: 1; min-width: 12px; }
+.sk-drawio-editor .sk-draw-color-tool { position: relative; width: 30px; height: 28px; display: grid; place-items: center; cursor: pointer; }
+.sk-drawio-editor .sk-draw-color-tool > input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.sk-drawio-editor .sk-draw-color-tool > span { position: absolute; left: 6px; right: 6px; bottom: 1px; height: 3px; border: 1px solid #aaa; }
+.sk-drawio-editor .sk-flow-workspace { height: calc(100% - 132px); min-height: 0; display: flex; }
+.sk-drawio-editor .sk-flow-palette { position: relative; flex: 0 0 232px; min-width: 0; display: flex; flex-direction: column; padding: 0; border-right: 1px solid var(--draw-border); overflow: hidden; background: var(--draw-chrome); }
+.sk-drawio-editor .sk-draw-search { display: flex; align-items: center; flex: 0 0 auto; height: 29px; margin: 9px 9px 8px; padding: 0 9px; gap: 7px; background: #fff; border: 1px solid #d6dade; border-radius: 16px; }
+.sk-drawio-editor .sk-draw-search > svg { order: 2; flex-shrink: 0; }
+.sk-drawio-editor .sk-draw-search > input { flex: 1; width: 0; padding: 0; background: transparent; border: 0; outline: 0; font-size: 11px; }
+.sk-drawio-editor .sk-draw-search > button { padding: 0; width: 16px; height: 18px; border: 0; background: transparent; display: grid; place-items: center; }
+.sk-drawio-editor .sk-draw-libraries { flex: 1; overflow-y: auto; padding: 0 8px 10px 10px; scrollbar-width: thin; scrollbar-color: #d8dadd transparent; }
+.sk-drawio-editor .sk-draw-library { margin: 0; }
+.sk-drawio-editor .sk-draw-library > summary { padding: 10px 7px 9px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; list-style: none; }
+.sk-drawio-editor .sk-draw-library > summary::before { content: '▸'; display: inline-block; width: 14px; color: #555; transform-origin: 4px 50%; transition: transform .1s; }
+.sk-drawio-editor .sk-draw-library[open] > summary::before { transform: rotate(90deg); }
+.sk-drawio-editor .sk-draw-library > summary:hover { background: #e8ebee; }
+.sk-drawio-editor .sk-draw-library > .sk-draw-shapes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px 0; padding: 5px 1px 10px; }
+.sk-drawio-editor .sk-draw-shapes > button { height: 36px; min-width: 0; padding: 2px; display: grid; place-items: center; color: #444; border: 1px solid transparent; border-radius: 1px; background: transparent; cursor: grab; }
+.sk-drawio-editor .sk-draw-shapes > button:hover { background: #e3e5e7; border-color: #c7ccd0; }
+.sk-drawio-editor .sk-draw-shapes > button:active { cursor: grabbing; background: #d5e5ef; }
+.sk-drawio-editor .sk-draw-shapes > button > svg { width: 31px; height: 27px; color: inherit; }
+.sk-drawio-editor .sk-draw-library > .sk-draw-templates { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 2px 3px 10px; }
+.sk-drawio-editor .sk-draw-templates > button { width: auto; min-width: 0; height: 64px; display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: center; padding: 5px; color: #444; background: transparent; border: 1px solid #d7dce0; border-radius: 1px; }
+.sk-drawio-editor .sk-draw-templates > button > svg { width: 85px; height: 30px; }
+.sk-drawio-editor .sk-draw-templates > button > span { font-size: 10px; }
+.sk-drawio-editor .sk-draw-templates > button:hover { background: #e4e8ec; }
+.sk-drawio-editor .sk-draw-library-footer { display: flex; justify-content: center; padding: 7px; flex-shrink: 0; }
+.sk-drawio-editor .sk-draw-library-footer > button { display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 0; border-radius: 2px; background: #c8e8fa; color: #38596e; font-weight: 600; }
+.sk-drawio-editor .sk-draw-no-results { padding: 12px 5px; color: #888; }
+.sk-drawio-editor .sk-flow-stage { position: relative; flex: 1; min-width: 120px; overflow: clip; background: #ececec; }
+.sk-drawio-editor .sk-x6-stage { flex: 1; position: absolute; inset: 0; overflow: clip; background: #ececec; }
+.sk-drawio-editor .sk-x6-canvas { outline: 0; background: transparent; }
+.sk-drawio-editor .sk-draw-paper { position: absolute; left: 0; top: 0; transform-origin: 0 0; border: 1px solid #d3d3d3; box-shadow: 0 0 3px #00000014; pointer-events: none; }
+.sk-drawio-editor .sk-draw-paper.has-grid { background-image: linear-gradient(#ededed80 1px, transparent 1px), linear-gradient(90deg, #ededed80 1px, transparent 1px), linear-gradient(#e0e0e0 1px, transparent 1px), linear-gradient(90deg, #e0e0e0 1px, transparent 1px); background-size: var(--draw-grid) var(--draw-grid), var(--draw-grid) var(--draw-grid), var(--draw-major-grid) var(--draw-major-grid), var(--draw-major-grid) var(--draw-major-grid); }
+.sk-drawio-editor .is-panning, .sk-drawio-editor .is-panning *, .sk-drawio-editor .is-pan-tool, .sk-drawio-editor .is-pan-tool * { cursor: grab !important; }
+.sk-drawio-editor .is-panning, .sk-drawio-editor .is-panning * { cursor: grabbing !important; }
+.sk-drawio-editor .sk-x6-minimap { opacity: 0; visibility: hidden; pointer-events: none; border-radius: 1px; box-shadow: 0 1px 5px #0002; }
+.sk-drawio-editor [data-minimap="true"] .sk-x6-minimap { opacity: 1; visibility: visible; pointer-events: auto; }
+.sk-drawio-editor [data-ports="false"] .x6-port-body { opacity: 0 !important; pointer-events: none; }
+.sk-drawio-editor .x6-widget-transform { border: 1px dashed #4eafe0; box-shadow: none; }
+.sk-drawio-editor .x6-widget-transform-resize { width: 8px; height: 8px; background: #56b2e6; border: 1px solid #fff; border-radius: 50%; }
+.sk-drawio-editor .x6-widget-transform-resize::before { display: none; }
+.sk-drawio-editor .x6-widget-transform-rotate { border-color: #56b2e6; background: #fff; }
+.sk-drawio-editor .x6-widget-selection-rubberband { background: #4eafe018; border: 1px solid #4eafe0; }
+.sk-drawio-editor .x6-widget-selection-box { border: 1px dashed #4eafe0; box-shadow: none; }
+.sk-drawio-editor .x6-port-body { fill: #fff; stroke: #4eafe0; stroke-width: 1.5; }
+.sk-drawio-editor .sk-flow-inspector { flex: 0 0 240px; padding: 0; overflow: hidden; display: flex; flex-direction: column; border-left: 1px solid var(--draw-border); background: var(--draw-chrome); }
+.sk-drawio-editor .sk-draw-format-tabs { display: flex; height: 36px; min-height: 36px; border-bottom: 1px solid var(--draw-border); }
+.sk-drawio-editor .sk-draw-format-tabs > button { flex: 1; border: 0; border-right: 1px solid #d9dcdf; border-radius: 0; background: #e5e7e9; }
+.sk-drawio-editor .sk-draw-format-tabs > button[aria-selected="true"] { background: var(--draw-chrome); font-weight: 600; box-shadow: 0 1px var(--draw-chrome); }
+.sk-drawio-editor .sk-draw-format-content { padding: 3px 12px 16px; flex: 1; overflow-y: auto; scrollbar-width: thin; }
+.sk-drawio-editor .sk-draw-format-section { margin: 0; padding: 10px 0 12px; border-bottom: 1px solid #d8dcdf; }
+.sk-drawio-editor .sk-draw-format-section > summary { list-style: none; cursor: pointer; padding: 5px 0 8px; font-weight: 600; font-size: 11px; }
+.sk-drawio-editor .sk-draw-format-section > summary::before { content: '▸'; width: 10px; display: inline-block; margin-left: -3px; }
+.sk-drawio-editor .sk-draw-format-section[open] > summary::before { content: '▾'; }
+.sk-drawio-editor .sk-draw-format-section > div { display: grid; gap: 7px; }
+.sk-drawio-editor .sk-flow-inspector input:not([type="checkbox"]), .sk-drawio-editor .sk-flow-inspector select { height: 25px; padding: 2px 5px; margin: 0; border: 1px solid #d4d8dc; border-radius: 3px; background: #fff; font-size: 11px; width: 100%; }
+.sk-drawio-editor .sk-flow-inspector input[type="checkbox"] { width: 12px; height: 12px; padding: 0; margin: 0 6px 0 0; vertical-align: middle; accent-color: #1684fb; }
+.sk-drawio-editor .sk-draw-check { min-height: 24px; display: flex; align-items: center; }
+.sk-drawio-editor .sk-draw-option-row { display: flex; align-items: center; justify-content: space-between; gap: 7px; min-height: 25px; }
+.sk-drawio-editor .sk-draw-option-row > label:not(.sk-draw-number) { flex: 1; display: flex; align-items: center; }
+.sk-drawio-editor .sk-draw-option-row > input[type="color"], .sk-drawio-editor .sk-draw-text-tools > input[type="color"] { width: 44px; height: 24px; padding: 2px; background: transparent; }
+.sk-drawio-editor .sk-draw-option-row > .sk-draw-number { width: 73px; flex: 0 1 73px; }
+.sk-drawio-editor .sk-draw-number { min-width: 0; position: relative; display: block; }
+.sk-drawio-editor .sk-draw-number > input { padding-right: 20px !important; }
+.sk-drawio-editor .sk-draw-number > span { position: absolute; right: 16px; top: 4px; pointer-events: none; color: #777; font-size: 10px; }
+.sk-drawio-editor .sk-draw-option-row > select { flex: 1; min-width: 0; }
+.sk-drawio-editor .sk-draw-presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 16px 14px; border-bottom: 1px solid #d8dcdf; }
+.sk-drawio-editor .sk-draw-presets > button { height: 23px; padding: 0; border: 1px solid; border-radius: 0; transition: transform .1s; }
+.sk-drawio-editor .sk-draw-presets > button:hover { transform: scale(1.07); }
+.sk-drawio-editor .sk-draw-panel-buttons { display: grid; gap: 5px; padding: 10px 0; }
+.sk-drawio-editor .sk-draw-panel-buttons > button, .sk-drawio-editor .sk-draw-wide-button, .sk-drawio-editor .sk-draw-option-row > button { height: 25px; padding: 2px 7px; border: 1px solid #d5dade; border-radius: 3px; background: transparent; }
+.sk-drawio-editor .sk-draw-panel-buttons > button:hover:not(:disabled), .sk-drawio-editor .sk-draw-wide-button:hover { background: #e2e7eb; }
+.sk-drawio-editor .sk-draw-text-tools { display: flex; align-items: center; justify-content: space-between; gap: 3px; }
+.sk-drawio-editor .sk-draw-text-tools > .sk-draw-number { flex: 1; }
+.sk-drawio-editor .sk-draw-text-tools > button { min-width: 25px; }
+.sk-drawio-editor .sk-draw-layer-tools { display: flex; justify-content: space-around; padding: 13px 0; border-bottom: 1px solid #d8dcdf; }
+.sk-drawio-editor .sk-draw-field-captions { display: grid; grid-template-columns: 1fr 1fr; text-align: center; color: #777; font-size: 10px; }
+.sk-drawio-editor .sk-draw-format-section .sk-draw-option-row:has(+ .sk-draw-field-captions) > .sk-draw-number { flex: 1; width: auto; }
+.sk-drawio-editor .sk-draw-align-tools { display: flex; justify-content: space-between; }
+.sk-drawio-editor .sk-draw-align-tools button { min-width: 26px; padding: 3px; }
+.sk-drawio-editor .sk-arrow-settings { padding: 0; margin: 0; border: 0; }
+.sk-drawio-editor .sk-arrow-settings label { color: #555; font-size: 11px; }
+.sk-drawio-editor .sk-arrow-settings input[type="range"] { padding: 0; border: 0; box-shadow: none; accent-color: #55aee0; background: transparent; }
+.sk-drawio-editor .sk-arrow-settings small { color: #777; font-size: 10px; }
+.sk-drawio-editor .sk-draw-footer { height: 32px; display: flex; align-items: center; border-top: 1px solid var(--draw-border); background: #e9edf0; color: #666; }
+.sk-drawio-editor .sk-draw-page-tab { align-self: stretch; padding: 6px 15px; display: flex; align-items: center; gap: 8px; border-right: 1px solid #d2dae0; background: #d8e7f5; color: #2268b9; font-weight: 600; }
+.sk-drawio-editor .sk-draw-canvas-hint { padding-left: 15px; color: #777; font-size: 11px; }
+.sk-drawio-editor .sk-draw-selection-status { margin-left: auto; padding-right: 14px; font-size: 11px; }
+.sk-drawio-editor .sk-draw-menu { position: fixed; z-index: 150; top: 59px; left: 65px; min-width: 244px; max-height: calc(100vh - 110px); padding: 4px 0; overflow-y: auto; background: #f3f4f6; border: 1px solid #c9cdd1; border-radius: 2px; box-shadow: 1px 3px 6px #0002; animation: sk-draw-menu-enter .1s ease-out; }
+.sk-drawio-editor .sk-draw-menu.is-edit { left: 106px; }.sk-drawio-editor .sk-draw-menu.is-view { left: 151px; }.sk-drawio-editor .sk-draw-menu.is-arrange { left: 195px; }.sk-drawio-editor .sk-draw-menu.is-help { left: 238px; }.sk-drawio-editor .sk-draw-menu.is-zoom { top: 99px; left: 58px; min-width: 170px; }.sk-drawio-editor .sk-draw-menu.is-connection { top: 99px; left: 500px; min-width: 180px; }
+.sk-drawio-editor .sk-draw-menu button { height: 29px; width: 100%; padding: 0 15px 0 7px; display: flex; align-items: center; gap: 7px; border: 0; border-radius: 0; background: transparent; text-align: left; white-space: nowrap; }
+.sk-drawio-editor .sk-draw-menu button:hover:not(:disabled), .sk-drawio-editor .sk-draw-menu button:focus-visible { outline: 0; background: #d9e7f3; }
+.sk-drawio-editor .sk-draw-menu-check { display: grid; place-items: center; width: 16px; flex: 0 0 16px; }
+.sk-drawio-editor .sk-draw-menu kbd, .sk-drawio-editor .sk-flow-context-menu kbd { margin-left: auto; padding-left: 18px; color: #888; font: 11px Helvetica, Arial, sans-serif; }
+.sk-drawio-editor .sk-draw-menu hr, .sk-drawio-editor .sk-flow-context-menu hr { margin: 4px 3px; border: 0; border-top: 1px solid #d9dce0; }
+.sk-drawio-editor .sk-draw-shortcuts { padding: 9px 15px; min-width: 310px; }
+.sk-drawio-editor .sk-draw-shortcuts > strong { display: block; margin-bottom: 10px; }
+.sk-drawio-editor .sk-draw-shortcuts > p { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 8px 0; }
+.sk-drawio-editor .sk-draw-context-menu { width: 230px; padding: 4px 0; border: 1px solid #c9cdd1; border-radius: 2px; box-shadow: 1px 3px 6px #0002; background: #f3f4f6; }
+.sk-drawio-editor .sk-draw-context-menu > button { display: flex; align-items: center; justify-content: space-between; padding: 5px 13px; border-radius: 0; }
+.sk-drawio-editor .sk-draw-quick-connect { position: fixed; z-index: 115; width: 23px; height: 23px; padding: 0; line-height: 23px; border: 0; border-radius: 2px; color: #52b2df; background: transparent; font-size: 19px; opacity: .7; }
+.sk-drawio-editor .sk-draw-quick-connect:hover { opacity: 1; background: #ccecff99; }
+.sk-drawio-editor .sk-draw-quick-connect.is-top { transform: translate(-50%, -33px); }.sk-drawio-editor .sk-draw-quick-connect.is-right { transform: translate(10px, -50%); }.sk-drawio-editor .sk-draw-quick-connect.is-bottom { transform: translate(-50%, 10px); }.sk-drawio-editor .sk-draw-quick-connect.is-left { transform: translate(-33px, -50%); }
+.sk-drawio-editor .sk-draw-inline-editor { min-height: 20px; margin: 0; padding: 0; resize: none; border: 0; border-radius: 0; outline: 1px dashed #5ab4e3; background: #ffffffed; box-shadow: none; line-height: 1.2; text-align: center; transform: translate(-50%, -50%); overflow: auto; animation: none; }
+.sk-drawio-editor .sk-draw-library-modal { position: fixed; z-index: 160; inset: 0; display: grid; place-items: center; background: #0004; }
+.sk-drawio-editor .sk-draw-library-modal > div { width: 350px; padding: 18px; background: #f3f4f6; border: 1px solid #bfc4c9; box-shadow: 0 5px 20px #0003; }
+.sk-drawio-editor .sk-draw-library-modal header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.sk-drawio-editor .sk-draw-library-modal header > button { padding: 0; border: 0; background: transparent; }
+.sk-drawio-editor .sk-draw-library-modal label { padding: 6px 0; display: flex; align-items: center; gap: 9px; }
+.sk-drawio-editor .sk-draw-library-modal .sk-draw-save { float: right; margin: 10px 0 0; }
+@keyframes sk-draw-enter { from { opacity: .75; } to { opacity: 1; } }
+@keyframes sk-draw-menu-enter { from { opacity: 0; translate: 0 -2px; } to { opacity: 1; translate: 0 0; } }
+@media (max-width: 1050px) { .sk-drawio-editor .sk-flow-palette { flex-basis: 200px; }.sk-drawio-editor .sk-flow-inspector { flex-basis: 220px; }.sk-drawio-editor .sk-draw-save-status, .sk-drawio-editor .sk-draw-canvas-hint { display: none; }.sk-drawio-editor .sk-draw-toolbar { padding: 0 8px; }.sk-drawio-editor .sk-draw-toolbar > i { margin: 0 3px; } }
+@media (max-width: 700px) { .sk-drawio-editor .sk-flow-palette { flex-basis: 162px; }.sk-drawio-editor .sk-flow-inspector { flex-basis: 190px; }.sk-drawio-editor .sk-draw-library > .sk-draw-shapes { grid-template-columns: repeat(4, 1fr); }.sk-drawio-editor .sk-draw-document-title { font-size: 17px; }.sk-drawio-editor .sk-draw-logo { display: none; }.sk-drawio-editor .sk-draw-header-actions .sk-draw-save { max-width: 100px; font-size: 10px; }.sk-drawio-editor .sk-draw-menu { max-width: calc(100vw - 24px); left: 12px !important; } }
+@media (prefers-reduced-motion: reduce) { .sk-drawio-editor, .sk-drawio-editor .sk-draw-menu { animation: none; }.sk-drawio-editor .sk-draw-save, .sk-drawio-editor .sk-draw-presets button, .sk-drawio-editor .sk-draw-library > summary::before { transition: none; } }
+.sk-drawio-editor .x6-node { filter: none; }
+.sk-drawio-editor .sk-draw-presets > .sk-draw-preset-pages { display: flex; grid-column: 1 / -1; justify-content: center; gap: 6px; padding-top: 4px; }
+.sk-drawio-editor .sk-draw-preset-pages > button { width: 6px; height: 6px; padding: 0; border: 1px solid #a9b5bd; border-radius: 50%; background: transparent; }
+.sk-drawio-editor .sk-draw-preset-pages > button[aria-pressed="true"] { background: #a4cfdf; border-color: #8dbccf; }
+.sk-drawio-editor .sk-draw-marker-row { display: flex; align-items: center; gap: 6px; }.sk-drawio-editor .sk-draw-marker-row > span { flex: 0 0 54px; }.sk-drawio-editor .sk-draw-marker-row > select { flex: 1; min-width: 0; }
+.sk-drawio-editor .sk-x6-stage .x6-node-selected .x6-port-body { opacity: 0; }.sk-drawio-editor .sk-x6-stage .x6-node:hover .x6-port-body { opacity: 1; }
+.sk-drawio-editor .sk-draw-quick-picker { position: fixed; z-index: 125; width: 166px; padding: 5px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; border: 1px solid #c9ced2; border-radius: 3px; background: #f3f4f6; box-shadow: 1px 2px 6px #0003; animation: sk-draw-menu-enter .1s ease-out; }
+.sk-drawio-editor .sk-draw-quick-picker > button { height: 32px; padding: 4px; border: 1px solid transparent; border-radius: 1px; color: #444; background: transparent; }.sk-drawio-editor .sk-draw-quick-picker > button:hover, .sk-drawio-editor .sk-draw-quick-picker > button:focus-visible { background: #dfe6ed; border-color: #b8cad8; }.sk-drawio-editor .sk-draw-quick-picker > button > svg { width: 27px; height: 23px; }
+.sk-drawio-editor .x6-node.sk-draw-connection-target > :is(rect, path, ellipse, polygon) { stroke: #24c961; stroke-width: 2; }
+@media (prefers-reduced-motion: reduce) { .sk-drawio-editor .sk-draw-quick-picker { animation: none; } }
+.sk-drawio-editor .sk-draw-quick-connect { width: 24px; height: 24px; opacity: .42; touch-action: none; }.sk-drawio-editor .sk-draw-quick-connect > svg { width: 24px; height: 24px; fill: currentColor; }.sk-drawio-editor .sk-draw-quick-connect.is-right > svg { transform: rotate(90deg); }.sk-drawio-editor .sk-draw-quick-connect.is-bottom > svg { transform: rotate(180deg); }.sk-drawio-editor .sk-draw-quick-connect.is-left > svg { transform: rotate(-90deg); }
+.sk-drawio-editor .x6-widget-transform-rotate { left: auto; right: -18px; top: -22px; width: 17px; height: 17px; border: 0; background: transparent; }.sk-drawio-editor .x6-widget-transform-rotate::before { content: '⟳'; position: absolute; inset: -3px; display: grid; place-items: center; color: #58b1e2; font-size: 23px; line-height: 20px; border: 0; background: none; }
+.sk-drawio-editor .x6-edge.x6-edge-selected > path:not([stroke="transparent"]) { stroke: #3b9acb; }
+.sk-drawio-editor .sk-draw-save-error { margin-left: 8px; padding: 2px 6px; background: #f8ded9; color: #9e3c30; font-size: 11px; }
+.sk-drawio-editor .sk-draw-exit-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }.sk-drawio-editor .sk-draw-exit-actions > button { padding: 5px 9px; border: 1px solid #c9cdd1; border-radius: 2px; }.sk-drawio-editor .sk-draw-exit-actions .sk-draw-save { float: none; margin: 0; }
+.sk-drawio-editor .sk-draw-preview-select { position: relative; min-width: 0; }
+.sk-drawio-editor .sk-draw-preview-select > button { width: 100%; height: 25px; padding: 2px 5px; display: flex; align-items: center; gap: 7px; background: #fff; border: 1px solid #d4d8dc; border-radius: 3px; }
+.sk-drawio-editor .sk-draw-preview-select svg { flex: 0 0 36px; width: 36px; height: 18px; }.sk-drawio-editor .sk-draw-preview-select > button > svg:last-child { flex: 0 0 11px; margin-left: auto; }
+.sk-drawio-editor .sk-draw-preview-select > [role="menu"] { position: absolute; z-index: 140; min-width: 170px; padding: 3px; top: 26px; right: 0; background: #f3f4f6; border: 1px solid #c9cdd1; box-shadow: 1px 3px 6px #0002; }
+.sk-drawio-editor .sk-draw-preview-select [role="menuitemradio"] { width: 100%; padding: 4px 6px; display: flex; align-items: center; gap: 9px; border: 0; background: transparent; text-align: left; white-space: nowrap; }.sk-drawio-editor .sk-draw-preview-select [role="menuitemradio"]:is(:hover,:focus-visible) { background: #d9e7f3; outline: 0; }
+.sk-drawio-editor .sk-draw-terminals { display: grid; grid-template-columns: 54px minmax(0,1fr) minmax(0,1fr); gap: 5px; align-items: center; }.sk-drawio-editor .sk-draw-terminals > span { font-size: 10px; }
+.sk-drawio-editor .sk-draw-terminals [role="menu"] { min-width: 150px; }.sk-drawio-editor .sk-draw-terminals > .sk-draw-preview-select:nth-child(5) > [role="menu"] { left: 0; right: auto; }
+.sk-drawio-editor .sk-draw-edge-toolbar { position: fixed; z-index: 116; display: flex; transform: translateX(-50%); padding: 3px; border: 1px solid #d4d8dc; border-radius: 8px; background: #fff; box-shadow: 0 1px 4px #0002; }
+.sk-drawio-editor .sk-draw-edge-toolbar > button { display: grid; place-items: center; width: 26px; height: 24px; padding: 3px; border: 0; border-radius: 3px; background: transparent; }.sk-drawio-editor .sk-draw-edge-toolbar > button:is(:hover,[aria-pressed="true"]) { background: #e6edf3; }.sk-drawio-editor .sk-draw-edge-toolbar svg { width: 22px; height: 18px; }
+.sk-drawio-editor .sk-draw-quick-connect { opacity: .42; }.sk-drawio-editor .sk-draw-quick-connect:hover { opacity: 1; }
+.sk-drawio-editor .sk-draw-opacity { padding: 12px 0; border-bottom: 1px solid #d8dcdf; }

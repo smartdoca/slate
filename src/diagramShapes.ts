@@ -2,6 +2,12 @@ import type { DiagramNodeType } from './types'
 
 // Shared normalized geometry for the palette, editor and exported diagram.
 export const diagramPaths: Partial<Record<DiagramNodeType, string>> = {
+  cube: 'M0 12H80L100 0H20Z M0 12V60H80V12 M80 60L100 48V0',
+  chevron: 'M0 0H70L100 30L70 60H0L30 30Z',
+  trapezoid: 'M20 0H80L100 60H0Z',
+  callout: 'M0 0H100V42H45L25 60V42H0Z',
+  folder: 'M0 0H40L50 12H100V60H0Z',
+  crescent: 'M0 0C100 0 100 60 0 60C40 48 40 12 0 0Z',
   triangle: 'M50 0L100 60H0Z',
   hexagon: 'M25 0H75L100 30L75 60H25L0 30Z',
   pentagon: 'M50 0L100 23L81 60H19L0 23Z',
