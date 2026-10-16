@@ -2,7 +2,7 @@ import { useEditorI18n, translate, zhCN } from '../i18n'
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type PointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Transforms } from 'slate'
-import { shouldOpenMediaPreview } from '../media'
+import { isSelectedElement, shouldOpenMediaPreview } from '../media'
 import { DOMEditor } from 'slate-dom'
 import { useSelected, useSlateStatic, useReadOnly } from 'slate-react'
 import { Graph, Shape, Cell, Point, type Edge, type EdgeView, type Node } from '@antv/x6'
@@ -22,6 +22,7 @@ import '@antv/x6-plugin-snapline/dist/index.css'
 import '@antv/x6-plugin-transform/dist/index.css'
 import { createId } from '../data'
 import { diagramPaths } from '../diagramShapes'
+import { diagramBoundaryPorts } from '../diagramPorts'
 import { arrowBendFromPoint, blockArrowGeometry } from '../diagramArrows'
 import type { DiagramArrowDirection, DiagramArrowRoute, DiagramCanvasSettings, DiagramMarker, DiagramEdge, DiagramEdgeType, DiagramLineStyle, DiagramNode, DiagramNodeType, FlowchartElement } from '../types'
 import { diagramInsertionPosition } from '../diagramPlacement'
@@ -32,7 +33,7 @@ import { MediaDownloadMenu, MediaLightbox } from './MediaLightbox'
 
 export type NodeData = { aspectRatioLocked: boolean; rounded: boolean; shadow: boolean; fontFamily: string; bold: boolean; italic: boolean; underline: boolean; textAlign: 'left' | 'center' | 'right'; diagramShape: DiagramNodeType; arrowDirection: DiagramArrowDirection; arrowRoute: DiagramArrowRoute; arrowThickness: number; arrowHeadSize: number; arrowBend: number; label: string; details?: string; color: string; fillColor: string; textColor: string; lineStyle: DiagramLineStyle; borderWidth: number; fontSize: number; opacity: number }
 export type EdgeData = { lineJoin?: 'miter' | 'round' | 'bevel'; lineJump?: 'none' | 'arc' | 'gap' | 'cubic'; jumpSize?: number; sourceArrowSize?: number; targetArrowSize?: number; sourceOffset?: number; targetOffset?: number; sourceArrow?: DiagramMarker; targetArrow?: DiagramMarker; arrowSize?: number; labelPosition?: number; fontFamily?: string; textColor?: string; bold?: boolean; italic?: boolean; underline?: boolean; lineType: DiagramEdgeType; lineStyle: DiagramLineStyle; arrow: 'none' | 'end' | 'both'; color: string; thickness: number; fontSize: number; opacity: number; label?: string }
-const FLOW_PREVIEW_VERSION = 9
+const FLOW_PREVIEW_VERSION = 10
 const SHAPES: Array<{ group: "ui.flowchart" | 'UML' | "ui.general" | 'diagram.basic'; type: DiagramNodeType; label: string; hint: string; icon: typeof Square; preset?: Partial<DiagramNode> }> = [
   { group: 'diagram.basic', type: 'circle', label: 'diagram.circle', hint: 'diagram.circleHint', icon: Square },
   { group: 'diagram.basic', type: 'ellipse', label: 'diagram.ellipse', hint: 'diagram.ellipseHint', icon: Square },
@@ -75,13 +76,18 @@ const ellipse = new Set<DiagramNodeType>(['circle', 'ellipse', 'terminator', 'us
 const polygons: Partial<Record<DiagramNodeType, string>> = { decision: '0,10 10,0 20,10 10,20', data: '5,0 20,0 15,10 0,10', 'manual-input': '3,3 20,0 20,10 0,10', preparation: '4,0 16,0 20,10 16,20 4,20 0,10', display: '4,0 17,0 20,10 17,20 4,20 0,10', storage: '3,0 20,0 17,10 0,10', 'off-page-connector': '0,0 20,0 20,14 10,20 0,14', merge: '0,0 20,10 0,20', card: '0,4 4,0 20,0 20,20 0,20' }
 const portSides = ['top', 'right', 'bottom', 'left'] as const
 const ports = {
-  groups: Object.fromEntries(portSides.map(position => [position, { position,
+  groups: Object.fromEntries(portSides.map(position => [position, { position: 'absolute' as const,
     markup: [{ tagName: 'g', selector: 'portBody', attrs: { class: 'x6-port-body' }, children: [{ tagName: 'circle', selector: 'portHit' }, { tagName: 'path', selector: 'portCross' }] }],
     attrs: { portHit: { r: 7, magnet: true, fill: 'transparent', stroke: 'none' }, portCross: { d: 'M -3 0 H 3 M 0 -3 V 3', fill: 'none', stroke: '#4eafe0', strokeWidth: 1, pointerEvents: 'none' } },
   }])),
   items: portSides.flatMap(group => [1, 2, 3].map(index => ({ id: `${group}-${index}`, group }))),
 }
 const shapeName = (type: DiagramNodeType) => type === 'block-arrow' || diagramPaths[type] ? 'path' : polygons[type] ? 'polygon' : ellipse.has(type) ? 'ellipse' : 'rect'
+export const updateDiagramNodePorts = (node: Node) => {
+  if (node.getData<NodeData>().diagramShape === 'text') return
+  const items = diagramBoundaryPorts(shapeName(node.getData<NodeData>().diagramShape), node.size(), node.attr('body'))
+  if (JSON.stringify(node.getPorts()) !== JSON.stringify(items)) node.prop('ports/items', items, { ignoreHistory: true })
+}
 const defaultDetails = (type: DiagramNodeType, t: (key: string) => string) => type === 'class' ? t('diagram.classExample') : type === 'interface' ? '«interface»\n+ operation()' : undefined
 const nodePrefix: Partial<Record<DiagramNodeType, string>> = { interface: '«interface»\n' }
 const STYLE_PRESETS = [
@@ -155,7 +161,8 @@ export function makeNode(type: DiagramNodeType, x: number, y: number, source?: P
     color: source?.color || '#000000', fillColor: source?.fillColor || '#ffffff', textColor: source?.textColor || '#000000',
     lineStyle: source?.lineStyle || 'solid', borderWidth: source?.borderWidth ?? 1, fontSize: source?.fontSize || (legacyArrow ? 13 : 12), opacity: source?.opacity ?? 1,
   }
-  return { id: source?.id || createId(), shape: shapeName(type), x, y, width, height, angle: source?.angle ?? 0, parent: source?.parentId, attrs: nodeAttrs(data, { width, height }), ports: type === 'text' ? undefined : ports, data, zIndex: source?.zIndex ?? (['group', 'swimlane'].includes(type) ? -1 : 1) }
+  const attrs = nodeAttrs(data, { width, height })
+  return { id: source?.id || createId(), shape: shapeName(type), x, y, width, height, angle: source?.angle ?? 0, parent: source?.parentId, attrs, ports: type === 'text' ? undefined : { ...ports, items: diagramBoundaryPorts(shapeName(type), { width, height }, attrs.body) }, data, zIndex: source?.zIndex ?? (['group', 'swimlane'].includes(type) ? -1 : 1) }
 }
 
 export function serializeDiagramNode(node: Node): DiagramNode {
@@ -185,7 +192,7 @@ const applyEdgeAttrs = (edge: Edge, data: EdgeData) => {
   edge.removeAttrByPath('line/targetMarker')
   edge.attr(edgeAttrs(data))
 }
-const bodyConnectionPoint = { name: 'boundary', args: { selector: 'body', stroked: false } }
+const bodyConnectionPoint = { name: 'boundary', args: { selector: 'body', stroked: false, extrapolate: true, sticky: true } }
 const terminalConnectionPoint = (offset = 0) => offset ? { name: 'boundary', args: { ...bodyConnectionPoint.args, offset } } : bodyConnectionPoint
 const edgeConnector = (data: EdgeData) => data.lineJump && data.lineJump !== 'none' && data.lineType !== 'bezier'
   ? { name: 'jumpover', args: { type: data.lineJump, size: data.jumpSize ?? 6, radius: data.lineType === 'smoothstep' ? 12 : 0 } }
@@ -347,7 +354,7 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
     // setup after cancelling the first frame; a shared ref would stay blocked.
     let refreshFrame: number | null = null
     const scheduleRefresh = () => { if (refreshFrame === null) refreshFrame = requestAnimationFrame(() => { refreshFrame = null; if (graphRef.current !== graph) return; syncPaper(graph); setRevision(value => value + 1) }) }
-    graph.use(new Selection({ enabled: true, multiple: true, rubberband: true, rubberEdge: true, strict: true, movable: true, modifiers: null, multipleSelectionModifiers: ['shift', 'ctrl', 'meta'], showNodeSelectionBox: false })); graph.use(new Transform({ resizing: { enabled: true, minWidth: 20, minHeight: 20, orthogonal: true, preserveAspectRatio: node => node.getData<NodeData>().diagramShape === 'circle' || node.getData<NodeData>().aspectRatioLocked }, rotating: { enabled: true, grid: 1 } })); graph.use(new Snapline({ enabled: true, sharp: true })); graph.use(new History({ enabled: true, beforeAddCommand: (_event, args) => !args || (!("options" in args && args.options?.ignoreHistory) && !("key" in args && args.key === 'tools')) })); graph.use(new Clipboard({ enabled: true, useLocalStorage: false })); graph.use(new Keyboard({ enabled: true, global: true, guard: event => { const target = event.target as HTMLElement | null; const editable = target?.closest('input, textarea, select, [contenteditable="true"]'); return !editable?.closest('.sk-diagram-dialog') } })); graph.use(new MiniMap({ container: minimapRef.current, width: 168, height: 106, padding: 8 })); graph.use(new Export())
+    graph.use(new Selection({ enabled: true, multiple: true, rubberband: true, rubberEdge: true, strict: true, movable: true, modifiers: null, multipleSelectionModifiers: ['shift', 'ctrl', 'meta'], showNodeSelectionBox: true, pointerEvents: 'none' })); graph.use(new Transform({ resizing: { enabled: true, minWidth: 20, minHeight: 20, orthogonal: true, preserveAspectRatio: node => node.getData<NodeData>().diagramShape === 'circle' || node.getData<NodeData>().aspectRatioLocked }, rotating: { enabled: true, grid: 1 } })); graph.use(new Snapline({ enabled: true, sharp: true })); graph.use(new History({ enabled: true, beforeAddCommand: (_event, args) => !args || (!("options" in args && args.options?.ignoreHistory) && !("key" in args && args.key === 'tools')) })); graph.use(new Clipboard({ enabled: true, useLocalStorage: false })); graph.use(new Keyboard({ enabled: true, global: true, guard: event => { const target = event.target as HTMLElement | null; const editable = target?.closest('input, textarea, select, [contenteditable="true"]'); return !editable?.closest('.sk-diagram-dialog') } })); graph.use(new MiniMap({ container: minimapRef.current, width: 168, height: 106, padding: 8 })); graph.use(new Export())
     graph.on('scale', ({ sx }) => setZoomPercent(Math.round(sx * 100)))
     graph.on('translate', () => { syncPaper(graph); scheduleRefresh() })
     graph.on('scale', () => { syncPaper(graph); scheduleRefresh() })
@@ -367,6 +374,7 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
     graph.on('node:resized', () => { groupTransform = null }); graph.on('node:rotated', () => { groupTransform = null })
     graph.on('node:change:size', ({ node }) => {
       if (node.getData<NodeData>().diagramShape === 'block-arrow') node.attr(nodeAttrs(node.getData<NodeData>(), node.size()), { ignoreHistory: true })
+      updateDiagramNodePorts(node)
       scheduleRefresh()
     })
     graph.fromJSON({ nodes: element.nodes.map(node => makeNode(node.shape || 'process', node.x, node.y, node)), edges: element.edges.map(edge => makeEdge(edge)) }); requestAnimationFrame(() => {
@@ -601,6 +609,7 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
     current.batchUpdate('node-style', () => current.getSelectedCells().filter(item => item.isNode()).forEach(item => {
       const data = { ...item.getData<NodeData>(), ...patch }
       item.replaceData(data); item.attr(nodeAttrs(data, (item as Node).size()))
+      updateDiagramNodePorts(item as Node)
       if (patch.aspectRatioLocked !== undefined) { current.getPlugin<Transform>('transform')?.clearWidgets(); if (current.getSelectedCells().length === 1) current.getPlugin<Transform>('transform')?.createWidget(item as Node) }
     }))
     refresh()
@@ -672,7 +681,7 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
     if (!item?.isNode()) return
     const data = item.getData<NodeData>(), point = current.clientToLocal(event.clientX, event.clientY).rotate(item.getAngle(), item.getBBox().getCenter()), position = item.position()
     const next = { ...data, arrowBend: arrowBendFromPoint(item.size(), data.arrowDirection, data.arrowRoute, { x: point.x - position.x, y: point.y - position.y }) }
-    item.replaceData(next); item.attr(nodeAttrs(next, item.size())); refresh()
+    item.replaceData(next); item.attr(nodeAttrs(next, item.size())); updateDiagramNodePorts(item); refresh()
   }
   const handleCanvasMouseDown = (event: MouseEvent<HTMLDivElement>) => {
     // The second press can hit a newly displayed midpoint handle rather than
@@ -909,12 +918,14 @@ export function DiagramBlock({ element }: { element: FlowchartElement }) {
   }, [element.previewSvg, element.previewVersion, element.nodes, element.edges, element.type, element.contentWidth, element.contentHeight])
   const commit = useCallback((nodes: DiagramNode[], edges: DiagramEdge[], svg: string, size: { width: number; height: number }, canvasSettings: DiagramCanvasSettings) => { const preview = withoutEditorControls(svg); Transforms.setNodes(editor, { nodes, edges, canvasSettings, previewSvg: preview, previewVersion: FLOW_PREVIEW_VERSION, contentWidth: size.width, contentHeight: size.height, aspectRatio: size.width / size.height }, { at: DOMEditor.findPath(editor, element) }); setPreviewSvg(preview); setContentSize(size); setOpen(false) }, [editor, element])
   const resize = (event: PointerEvent<HTMLButtonElement>) => { if (readOnly || !resizing) return; const next = Math.max(260, Math.min(960, resizeStart.current.width + event.clientX - resizeStart.current.x)); Transforms.setNodes(editor, { width: Math.round(next) }, { at: DOMEditor.findPath(editor, element) }) }
+  const previewOnClick = useRef(false)
   const selectImage = (event: { preventDefault(): void }) => {
+    previewOnClick.current = readOnly || selected || isSelectedElement(editor, element)
     event.preventDefault()
     if (readOnly) return
     Transforms.select(editor, DOMEditor.findPath(editor, element)); DOMEditor.focus(editor)
   }
   const openEditor = () => { if (readOnly) return; Transforms.deselect(editor); setOpen(true) }
   const previewUrl = previewSvg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(previewSvg)}` : ''
-  return <><figure className={`sk-diagram-figure ${selected ? 'is-selected' : ''}`} contentEditable={false} style={{ width, aspectRatio, marginLeft: element.align === 'center' || element.align === 'right' ? 'auto' : 0, marginRight: element.align === 'center' ? 'auto' : 0 }} onMouseDown={selectImage}><div className="sk-diagram-preview" role="img" aria-label={t("ui.flowchartPreview")} title={t(readOnly ? 'media.clickToPreview' : 'media.clickToSelectThenPreview')} onClick={event => { if (previewUrl && shouldOpenMediaPreview(readOnly, false, event)) setViewing(true) }} onContextMenu={event => { if (!previewUrl) return; event.preventDefault(); setDownloadMenu({ x: event.clientX, y: event.clientY }) }}>{previewSvg ? <img src={previewUrl} alt={t("ui.flowchartPreview")} /> : <span className="sk-diagram-loading">{t("ui.generatingPreview")}</span>}</div><div className="sk-media-corner-actions"><button aria-label={t("ui.previewFlowchart")} title={t("ui.preview")} onMouseDown={event => event.stopPropagation()} onClick={() => previewUrl && setViewing(true)}><Maximize2 size={15} /></button><button hidden={readOnly} aria-label={t("ui.editFlowchart")} title={t("ui.editFlowchart")} onMouseDown={event => event.stopPropagation()} onClick={openEditor}><Pencil size={15} /></button></div><button hidden={readOnly} className="sk-diagram-resizer" aria-label={t("ui.resizeDiagramProportionally")} onClick={event => event.stopPropagation()} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId); resizeStart.current = { x: event.clientX, width }; setResizing(true) }} onPointerMove={resize} onPointerUp={() => setResizing(false)} /></figure>{downloadMenu && previewUrl && <MediaDownloadMenu src={previewUrl} downloadName={t("diagram.downloadFilename")} position={downloadMenu} close={() => setDownloadMenu(null)} />}{viewing && previewUrl && <MediaLightbox src={previewUrl} alt={t("ui.flowchart")} downloadName={t("diagram.downloadFilename")} close={() => setViewing(false)} />}{!readOnly && open && typeof document !== 'undefined' && createPortal(<div className="sk-diagram-modal" onClick={event => { if (event.target === event.currentTarget) setOpen(false) }} contentEditable={false} onMouseDown={event => event.stopPropagation()}><X6Editor element={element} close={() => setOpen(false)} commit={commit} /></div>, document.body)}</>
+  return <><figure className={`sk-diagram-figure ${selected ? 'is-selected' : ''}`} contentEditable={false} style={{ width, aspectRatio, marginLeft: element.align === 'center' || element.align === 'right' ? 'auto' : 0, marginRight: element.align === 'center' ? 'auto' : 0 }} onMouseDown={selectImage}><div className="sk-diagram-preview" role="img" aria-label={t("ui.flowchartPreview")} title={t(readOnly ? 'media.clickToPreview' : 'media.clickToSelectThenPreview')} onClick={event => { if (previewUrl && shouldOpenMediaPreview(readOnly, previewOnClick.current, event)) setViewing(true) }} onContextMenu={event => { if (!previewUrl) return; event.preventDefault(); setDownloadMenu({ x: event.clientX, y: event.clientY }) }}>{previewSvg ? <img src={previewUrl} alt={t("ui.flowchartPreview")} /> : <span className="sk-diagram-loading">{t("ui.generatingPreview")}</span>}</div><div className="sk-media-corner-actions"><button aria-label={t("ui.previewFlowchart")} title={t("ui.preview")} onMouseDown={event => event.stopPropagation()} onClick={() => previewUrl && setViewing(true)}><Maximize2 size={15} /></button><button hidden={readOnly} aria-label={t("ui.editFlowchart")} title={t("ui.editFlowchart")} onMouseDown={event => event.stopPropagation()} onClick={openEditor}><Pencil size={15} /></button></div><button hidden={readOnly} className="sk-diagram-resizer" aria-label={t("ui.resizeDiagramProportionally")} onClick={event => event.stopPropagation()} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId); resizeStart.current = { x: event.clientX, width }; setResizing(true) }} onPointerMove={resize} onPointerUp={() => setResizing(false)} /></figure>{downloadMenu && previewUrl && <MediaDownloadMenu src={previewUrl} downloadName={t("diagram.downloadFilename")} position={downloadMenu} close={() => setDownloadMenu(null)} />}{viewing && previewUrl && <MediaLightbox src={previewUrl} alt={t("ui.flowchart")} downloadName={t("diagram.downloadFilename")} close={() => setViewing(false)} />}{!readOnly && open && typeof document !== 'undefined' && createPortal(<div className="sk-diagram-modal" onClick={event => { if (event.target === event.currentTarget) setOpen(false) }} contentEditable={false} onMouseDown={event => event.stopPropagation()}><X6Editor element={element} close={() => setOpen(false)} commit={commit} /></div>, document.body)}</>
 }

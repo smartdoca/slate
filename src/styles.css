@@ -677,7 +677,8 @@
 .sk-drawio-editor .x6-widget-transform-resize::before { display: none; }
 .sk-drawio-editor .x6-widget-transform-rotate { border-color: #56b2e6; background: #fff; }
 .sk-drawio-editor .x6-widget-selection-rubberband { background: #4eafe018; border: 1px solid #4eafe0; }
-.sk-drawio-editor .x6-widget-selection-box { border: 1px dashed #4eafe0; box-shadow: none; }
+.sk-drawio-editor .x6-widget-selection-box { border: 1px dashed #2796d2; box-shadow: 0 0 0 1px #ffffffb3; pointer-events: none; }
+.sk-drawio-editor[data-multiple-selection="false"] .x6-widget-selection-box-node { visibility: hidden; }
 .sk-drawio-editor .x6-port-body { fill: #fff; stroke: #4eafe0; stroke-width: 1.5; }
 .sk-drawio-editor .sk-flow-inspector { flex: 0 0 240px; padding: 0; overflow: hidden; display: flex; flex-direction: column; border-left: 1px solid var(--draw-border); background: var(--draw-chrome); }
 .sk-drawio-editor .sk-draw-format-tabs { display: flex; height: 36px; min-height: 36px; border-bottom: 1px solid var(--draw-border); }
@@ -750,7 +751,11 @@
 @media (max-width: 700px) { .sk-drawio-editor .sk-flow-palette { flex-basis: 162px; }.sk-drawio-editor .sk-flow-inspector { flex-basis: 190px; }.sk-drawio-editor .sk-draw-library > .sk-draw-shapes { grid-template-columns: repeat(4, 1fr); }.sk-drawio-editor .sk-draw-header-actions .sk-draw-save { max-width: 100px; font-size: 10px; }.sk-drawio-editor .sk-draw-menu { max-width: calc(100vw - 24px); left: 12px !important; } }
 @media (prefers-reduced-motion: reduce) { .sk-drawio-editor, .sk-drawio-editor .sk-draw-menu { animation: none; }.sk-drawio-editor .sk-draw-save, .sk-drawio-editor .sk-draw-presets button, .sk-drawio-editor .sk-draw-library > summary::before { transition: none; } }
 .sk-drawio-editor .x6-node { filter: none; }
-.sk-drawio-editor .sk-draw-presets > .sk-draw-preset-pages { display: flex; grid-column: 1 / -1; justify-content: center; gap: 6px; padding-top: 4px; }
+.sk-drawio-editor .sk-draw-preset-navigation { display: flex; grid-column: 1 / -1; align-items: center; justify-content: center; gap: 14px; margin-top: 3px; }
+.sk-drawio-editor .sk-draw-preset-pages { display: flex; justify-content: center; gap: 6px; }
+.sk-drawio-editor .sk-draw-preset-arrow { display: flex; align-items: center; justify-content: center; width: 26px; height: 24px; padding: 0; border: 1px solid transparent; border-radius: 3px; background: transparent; color: #55616b; }
+.sk-drawio-editor .sk-draw-preset-arrow:hover { border-color: #c5cdd3; background: #e4e9ed; }
+.sk-drawio-editor .sk-draw-preset-arrow:focus-visible { outline: 2px solid #2796d2; outline-offset: 1px; }
 .sk-drawio-editor .sk-draw-preset-pages > button { width: 6px; height: 6px; padding: 0; border: 1px solid #a9b5bd; border-radius: 50%; background: transparent; }
 .sk-drawio-editor .sk-draw-preset-pages > button[aria-pressed="true"] { background: #a4cfdf; border-color: #8dbccf; }
 .sk-drawio-editor .sk-draw-marker-row { display: flex; align-items: center; gap: 6px; }.sk-drawio-editor .sk-draw-marker-row > span { flex: 0 0 54px; }.sk-drawio-editor .sk-draw-marker-row > select { flex: 1; min-width: 0; }

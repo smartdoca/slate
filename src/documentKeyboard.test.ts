@@ -102,7 +102,7 @@ it('deletes a selected image, attachment, or flowchart with Delete', async () =>
   const media = [
     { type: 'image' as const, id: 'image', path: '/test.png', alt: '图', children: [{ text: '' }] },
     { type: 'attachment' as const, id: 'file', path: '/notes.pdf', name: 'notes.pdf', children: [{ text: '' }] },
-    { type: 'flowchart' as const, id: 'flow', nodes: [], edges: [], previewSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"></svg>', previewVersion: 9, children: [{ text: '' }] },
+    { type: 'flowchart' as const, id: 'flow', nodes: [], edges: [], previewSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"></svg>', previewVersion: 10, children: [{ text: '' }] },
   ]
   try {
     await act(async () => root.render(createElement(RichTextEditor, { ref, initialValue: [

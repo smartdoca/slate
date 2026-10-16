@@ -42,22 +42,30 @@ it.each(['success', 'failure'] as const)('dismisses the media copy menu immediat
   }
 })
 
-it('keeps flowcharts and mind maps selected on repeated clicks and previews through the button', async () => {
+it('selects flowcharts and mind maps first, then previews on subsequent clicks and through the button', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
   const container = document.createElement('div'); document.body.append(container)
   const root = createRoot(container)
   try {
     await act(async () => root.render(createElement(RichTextEditor, { initialValue: [
-      { type: 'flowchart', id: 'flow', nodes: [], edges: [], previewSvg: diagramPreview, previewVersion: 9, children: [{ text: '' }] },
+      { type: 'flowchart', id: 'flow', nodes: [], edges: [], previewSvg: diagramPreview, previewVersion: 10, children: [{ text: '' }] },
       { type: 'mindmap', id: 'mind', mindData: { direction: 2, nodeData: { id: 'root', topic: '中心', expanded: true, children: [] } }, previewSvg: diagramPreview, previewVersion: 5, children: [{ text: '' }] },
     ] })))
     for (const figure of Array.from(container.querySelectorAll('.sk-diagram-figure'))) {
       const preview = figure.querySelector('.sk-diagram-preview')!
-      await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+      await act(async () => { preview.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
       await act(async () => { preview.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
       expect(document.querySelector('.sk-media-lightbox')).toBeNull()
       expect(figure.classList.contains('is-selected')).toBe(true)
-      await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+      await act(async () => { preview.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+      await act(async () => { preview.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+      expect(document.querySelector('.sk-media-lightbox img')).not.toBeNull()
+      await act(async () => { document.querySelector('.sk-media-lightbox-viewport')!.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+      await act(async () => { preview.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+      await act(async () => { preview.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })) })
+      expect(document.querySelector('.sk-media-lightbox')).toBeNull()
+      await act(async () => { document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+      await act(async () => { preview.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
       await act(async () => { preview.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
       expect(document.querySelector('.sk-media-lightbox')).toBeNull()
       await act(async () => { (figure.querySelector('.sk-media-corner-actions button') as HTMLButtonElement).click() })
@@ -118,27 +126,27 @@ it('selects editable images first, then previews on subsequent clicks and throug
     ] })))
     const figure = container.querySelector('.sk-image')!
     const img = container.querySelector('.sk-image img')!
-    await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { img.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     expect(document.querySelector('.sk-media-lightbox')).toBeNull()
     expect(figure.classList.contains('is-selected')).toBe(true)
     expect(ref.current!.editor.selection).toEqual({ anchor: { path: [0, 0], offset: 0 }, focus: { path: [0, 0], offset: 0 } })
-    await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { img.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     expect(document.querySelector('.sk-media-lightbox img')?.getAttribute('src')).toBe('/test.png')
     await act(async () => { document.querySelector('.sk-media-lightbox-viewport')!.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     expect(document.querySelector('.sk-media-lightbox')).toBeNull()
     // Closing the preview keeps the image selected, so another click can reopen it.
-    await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { img.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true })) })
     expect(document.querySelector('.sk-media-lightbox')).toBeNull()
-    await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { img.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     expect(document.querySelector('.sk-media-lightbox img')?.getAttribute('src')).toBe('/test.png')
     await act(async () => { document.querySelector('.sk-media-lightbox-viewport')!.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     await act(async () => { document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     expect(figure.classList.contains('is-selected')).toBe(false)
-    await act(async () => { figure.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
+    await act(async () => { img.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })) })
     await act(async () => { img.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
     expect(document.querySelector('.sk-media-lightbox')).toBeNull()
     await act(async () => { (figure.querySelector('.sk-media-preview-button') as HTMLButtonElement).click() })

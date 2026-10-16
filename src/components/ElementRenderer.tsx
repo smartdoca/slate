@@ -149,7 +149,7 @@ function ImageBlock({ element }: { element: ImageElement }) {
   }
   const selectImage = (event: React.MouseEvent) => {
     // Capture selection before this press selects the image.
-    previewOnClick.current = readOnly || isSelectedElement(editor, element)
+    previewOnClick.current = readOnly || selected || isSelectedElement(editor, element)
     event.preventDefault()
     if (readOnly) return
     Transforms.select(editor, DOMEditor.findPath(editor, element)); DOMEditor.focus(editor)
