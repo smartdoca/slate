@@ -1,4 +1,79 @@
 import type { MindMapNode } from './types'
+import { createId } from './ids'
+
+export const cloneMind = (node: MindMapNode): MindMapNode => ({ ...node, children: (node.children || []).map(cloneMind) })
+export const normalizeMind = (node: Partial<MindMapNode>, root = false, labels = { root: '中心主题', child: '新主题' }): MindMapNode => ({
+  ...node, id: node.id || createId(), topic: String(node.topic || (root ? labels.root : labels.child)), expanded: node.expanded !== false,
+  children: (node.children || []).map(child => normalizeMind(child, false, labels)),
+})
+export function walkMind(node: MindMapNode, visit: (item: MindMapNode, parent: MindMapNode | null, depth: number) => void, parent: MindMapNode | null = null, depth = 0) {
+  visit(node, parent, depth)
+  node.children?.forEach(child => walkMind(child, visit, node, depth + 1))
+}
+export function findMind(node: MindMapNode, id: string): MindMapNode | null {
+  if (node.id === id) return node
+  for (const child of node.children || []) { const found = findMind(child, id); if (found) return found }
+  return null
+}
+export function findMindParent(node: MindMapNode, id: string): MindMapNode | null {
+  for (const child of node.children || []) {
+    if (child.id === id) return node
+    const found = findMindParent(child, id); if (found) return found
+  }
+  return null
+}
+export function setBranchSide(node: MindMapNode, side: 'left' | 'right') { node.side = side; node.children?.forEach(child => setBranchSide(child, side)) }
+
+/** Reorder only among siblings on the same visual side. */
+export function reorderMind(root: MindMapNode, id: string, offset: -1 | 1) {
+  const parent = findMindParent(root, id), item = findMind(root, id)
+  if (!parent?.children || !item) return false
+  const siblings = parent.children.filter(child => child.side === item.side)
+  const other = siblings[siblings.indexOf(item) + offset]
+  if (!other) return false
+  const a = parent.children.indexOf(item), b = parent.children.indexOf(other)
+  ;[parent.children[a], parent.children[b]] = [parent.children[b], parent.children[a]]
+  layoutMindTree(root)
+  return true
+}
+
+export function insertMindParent(root: MindMapNode, id: string, topic: string): MindMapNode | null {
+  const parent = findMindParent(root, id), item = findMind(root, id)
+  if (!parent?.children || !item) return null
+  const inserted: MindMapNode = { id: createId(), topic, side: item.side, expanded: true, children: [item] }
+  parent.children.splice(parent.children.indexOf(item), 1, inserted)
+  layoutMindTree(root)
+  return inserted
+}
+
+export function removeMind(root: MindMapNode, id: string, keepChildren = false): string | null {
+  const parent = findMindParent(root, id), item = findMind(root, id)
+  if (!parent?.children || !item) return null
+  const index = parent.children.indexOf(item)
+  const promoted = keepChildren ? item.children || [] : []
+  promoted.forEach(child => setBranchSide(child, item.side || parent.side || 'right'))
+  parent.children.splice(index, 1, ...promoted)
+  layoutMindTree(root)
+  return parent.children[Math.min(index, parent.children.length - 1)]?.id || parent.id
+}
+
+export function mindToOutline(node: MindMapNode, depth = 0): string {
+  return `${'\t'.repeat(depth)}${node.topic.replace(/\n/g, ' ')}${node.children?.length ? '\n' + node.children.map(child => mindToOutline(child, depth + 1)).join('\n') : ''}`
+}
+
+/** Paste an indented outline as a bounded forest, preserving its hierarchy. */
+export function parseMindOutline(text: string): MindMapNode[] {
+  const forest: MindMapNode[] = [], stack: Array<{ indent: number; node: MindMapNode }> = []
+  for (const line of text.slice(0, 100000).split(/\r?\n/).filter(line => line.trim()).slice(0, 2000)) {
+    const indent = (line.match(/^\s*/)?.[0] || '').replace(/\t/g, '  ').length
+    const node: MindMapNode = { id: createId(), topic: line.trim().replace(/^[-*+]\s+/, ''), children: [] }
+    while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop()
+    if (stack.length < 64 && stack.length) stack[stack.length - 1].node.children!.push(node)
+    else forest.push(node)
+    if (stack.length < 64) stack.push({ indent, node })
+  }
+  return forest
+}
 
 /** Only accept our bounded tree payload; clipboard content is untrusted. */
 export function parseMindClipboard(raw: string): MindMapNode | null {
@@ -12,7 +87,9 @@ export function parseMindClipboard(raw: string): MindMapNode | null {
       const children = (node.children as unknown[] || []).map(child => parse(child, depth + 1))
       if (children.some(child => child === null)) return null
       return { id: '', topic: node.topic, children: children as MindMapNode[], expanded: node.expanded !== false,
-        style: ['rounded', 'pill', 'square', 'solid'].includes(String(node.style)) ? node.style as MindMapNode['style'] : undefined,
+        style: ['rounded', 'pill', 'square', 'solid', 'underline'].includes(String(node.style)) ? node.style as MindMapNode['style'] : undefined,
+        fontSize: typeof node.fontSize === 'number' && node.fontSize >= 12 && node.fontSize <= 36 ? node.fontSize : undefined,
+        bold: typeof node.bold === 'boolean' ? node.bold : undefined,
         color: typeof node.color === 'string' && /^#[\da-f]{6}$/i.test(node.color) ? node.color : undefined }
     }
     return parse(JSON.parse(raw), 0)
@@ -22,10 +99,12 @@ export function parseMindClipboard(raw: string): MindMapNode | null {
 export function mindNodeSize(node: MindMapNode, root: MindMapNode) {
   const primary = node.id === root.id
   const lines = node.topic.split('\n')
-  const unit = primary ? 23 : 17
-  const width = Math.max(primary ? 148 : 104, Math.min(260, Math.max(...lines.map(line => line.length)) * unit + 36))
-  const rows = lines.reduce((count, line) => count + Math.max(1, Math.ceil(line.length * unit / (width - 36))), 0)
-  return { width, height: Math.max(primary ? 66 : 44, rows * (primary ? 30 : 24) + 22) }
+  const unit = node.fontSize || (primary ? 24 : 16)
+  // Latin letters occupy roughly half an em; CJK and emoji need a full em.
+  const length = (line: string) => Array.from(line).reduce((sum, char) => sum + (/^[\x00-\xff]$/.test(char) ? .58 : 1) * unit, 0)
+  const width = Math.max(primary ? 144 : 88, Math.min(300, Math.max(...lines.map(length)) + 40))
+  const rows = lines.reduce((count, line) => count + Math.max(1, Math.ceil(length(line) / (width - 40))), 0)
+  return { width, height: Math.max(primary ? 64 : 42, rows * (unit * 1.45) + 22) }
 }
 
 export function visitVisibleMind(node: MindMapNode, visit: (node: MindMapNode, parent: MindMapNode | null, depth: number) => void, parent: MindMapNode | null = null, depth = 0) {

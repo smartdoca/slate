@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { expect, it, vi } from 'vitest'
 import { copyImage, MediaDownloadMenu } from './components/MediaLightbox'
 import { RichTextEditor } from './RichTextEditor'
+import { MIND_PREVIEW_VERSION } from './mindmapGraph'
 import type { RichTextEditorHandle } from './types'
 
 const diagramPreview = '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"></svg>'
@@ -49,7 +50,7 @@ it('selects flowcharts and mind maps first, then previews on subsequent clicks a
   try {
     await act(async () => root.render(createElement(RichTextEditor, { initialValue: [
       { type: 'flowchart', id: 'flow', nodes: [], edges: [], previewSvg: diagramPreview, previewVersion: 10, children: [{ text: '' }] },
-      { type: 'mindmap', id: 'mind', mindData: { direction: 2, nodeData: { id: 'root', topic: '中心', expanded: true, children: [] } }, previewSvg: diagramPreview, previewVersion: 5, children: [{ text: '' }] },
+      { type: 'mindmap', id: 'mind', mindData: { direction: 2, nodeData: { id: 'root', topic: '中心', expanded: true, children: [] } }, previewSvg: diagramPreview, previewVersion: MIND_PREVIEW_VERSION, children: [{ text: '' }] },
     ] })))
     for (const figure of Array.from(container.querySelectorAll('.sk-diagram-figure'))) {
       const preview = figure.querySelector('.sk-diagram-preview')!
