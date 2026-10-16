@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Graph, Node, Edge } from '@antv/x6'
-import { AlignCenter, AlignHorizontalDistributeCenter, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bold, BringToFront, Check, ChevronDown, ChevronRight, Copy, CornerDownRight, Download, Grid3X3, Hand, Italic, Layers, List, Maximize2, MousePointer2, Network, PaintBucket, PanelLeft, PanelRight, Pencil, Plus, Redo2, Save, Search, SendToBack, Square, Trash2, Type, Underline, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { AlignCenter, AlignHorizontalDistributeCenter, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bold, BringToFront, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, CornerDownRight, Download, Grid3X3, Hand, Italic, Layers, List, Maximize2, MousePointer2, Network, PaintBucket, PanelLeft, PanelRight, Pencil, Plus, Redo2, Save, Search, SendToBack, Square, Trash2, Type, Underline, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useEditorI18n } from '../i18n'
 import { diagramPaths } from '../diagramShapes'
 import { blockArrowGeometry } from '../diagramArrows'
@@ -131,8 +131,15 @@ export function DiagramWorkspace(props: WorkspaceProps) {
       }
     })
   }
-  const styleSwatches = <div className="sk-draw-presets">{props.presets.slice(swatchPage * 8, swatchPage * 8 + 8).map(preset => <button key={preset.name} title={t(preset.name)} aria-label={t(preset.name)} style={{ background: preset.fillColor, borderColor: preset.color }} onClick={() => updateNode(preset)} />)}<div className="sk-draw-preset-pages">{Array.from({ length: Math.ceil(props.presets.length / 8) }, (_, index) => <button key={index} aria-label={t('diagram.stylePage', { page: index + 1 })} aria-pressed={swatchPage === index} onClick={() => setSwatchPage(index)} />)}</div></div>
-  return <div ref={root} className="sk-diagram-dialog sk-drawio-editor" role="dialog" aria-modal="true" aria-label={t('diagram.workspace')} onKeyDownCapture={event => {
+  const swatchPages = Math.ceil(props.presets.length / 8)
+  const styleSwatches = <div className="sk-draw-presets">{props.presets.slice(swatchPage * 8, swatchPage * 8 + 8).map(preset => <button key={preset.name} title={t(preset.name)} aria-label={t(preset.name)} style={{ background: preset.fillColor, borderColor: preset.color }} onClick={() => updateNode(preset)} />)}{swatchPages > 1 && <div className="sk-draw-preset-navigation"><button className="sk-draw-preset-arrow" aria-label={t('diagram.previousStyles')} title={t('diagram.previousStyles')} onClick={() => setSwatchPage(page => (page - 1 + swatchPages) % swatchPages)}><ChevronLeft size={16} /></button><div className="sk-draw-preset-pages">{Array.from({ length: swatchPages }, (_, index) => <button key={index} aria-label={t('diagram.stylePage', { page: index + 1 })} aria-pressed={swatchPage === index} onClick={() => setSwatchPage(index)} />)}</div><button className="sk-draw-preset-arrow" aria-label={t('diagram.nextStyles')} title={t('diagram.nextStyles')} onClick={() => setSwatchPage(page => (page + 1) % swatchPages)}><ChevronRight size={16} /></button></div>}</div>
+  return <div ref={root} className="sk-diagram-dialog sk-drawio-editor" data-multiple-selection={count > 1} role="dialog" aria-modal="true" aria-label={t('diagram.workspace')} onMouseDownCapture={event => {
+    if (!(event.target instanceof Element) || !event.target.closest('.sk-x6-canvas')) return
+    const active = document.activeElement
+    // X6 prevents the default mouse press, so the browser does not blur fields.
+    // Commit while the original selection still owns the property panel.
+    if (active instanceof HTMLElement && root.current?.contains(active) && active.matches('input,textarea,select')) active.blur()
+  }} onKeyDownCapture={event => {
     if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 's' || event.nativeEvent.isComposing) return
     event.preventDefault(); event.stopPropagation()
     if (event.repeat || props.saving) return
@@ -162,7 +169,7 @@ export function DiagramWorkspace(props: WorkspaceProps) {
       <label className="sk-draw-color-tool" title={t('ui.fill')}><PaintBucket size={18} /><input type="color" aria-label={t('ui.fill')} value={style.fillColor === 'transparent' ? '#ffffff' : style.fillColor || '#ffffff'} onChange={event => updateNode({ fillColor: event.target.value })} /><span style={{ background: style.fillColor || '#ffffff' }} /></label>
       <label className="sk-draw-color-tool" title={t('ui.strokeColor')}><Pencil size={18} /><input type="color" aria-label={t('ui.strokeColor')} value={edge ? edgeStyle.color : style.color || '#000000'} onChange={event => edge ? updateEdge({ color: event.target.value }) : updateNode({ color: event.target.value })} /><span style={{ background: edge ? edgeStyle.color : style.color || '#000000' }} /></label><i />
       {iconButton(t('ui.independentEdge'), <ArrowRight />, () => command('edge'))}
-      <button data-draw-menu="connection" aria-label={t('ui.edgeType')} aria-haspopup="menu" aria-expanded={menu === 'connection'} onClick={() => toggleMenu('connection')}><CornerDownRight /><ChevronDown size={10} /></button><i />
+      <button data-draw-menu="connection" data-line-type={edgeStyle.lineType} aria-label={t('ui.edgeType')} title={t(edgeStyle.lineType === 'step' ? 'ui.orthogonal' : edgeStyle.lineType === 'smoothstep' ? 'ui.roundedEdge' : edgeStyle.lineType === 'straight' ? 'ui.straight' : 'ui.curve')} aria-haspopup="menu" aria-expanded={menu === 'connection'} onClick={() => toggleMenu('connection')}><DiagramRouteIcon type={edgeStyle.lineType} /><ChevronDown size={10} /></button><i />
       {iconButton(t('ui.freeText'), <Type />, () => command('text'))}{iconButton(t('ui.copy'), <Copy />, () => command('duplicate'), !hasSelection)}
       {iconButton(t('ui.autoLayout'), <Network />, () => command('layout'), !graph?.getNodes().length)}<i />
       {iconButton(t('diagram.panTool'), <Hand />, () => props.setPan(!props.pan), false, props.pan)}{iconButton(t('diagram.selectTool'), <MousePointer2 />, () => props.setPan(false), false, !props.pan)}
