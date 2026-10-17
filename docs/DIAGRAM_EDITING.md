@@ -90,3 +90,9 @@ Release validation passed 53 files / 214 tests with `vitest run --maxWorkers=2`,
 The element style palette now has 40 presets across five pages: the original light colors, solid fills, soft pastels, muted earth tones and deep colors with light text. Each preset applies border, fill and text colors together. The existing arrows cycle between all five pages, with direct dot navigation retained. The solid-green preset is slightly darker so that all 40 foreground/fill combinations have a computed contrast ratio of above 5:1.
 
 Validation covers the existing preset navigation/application, default styles and bilingual catalogs (9 tests), TypeScript, the production library build and Node ESM imports. Browser checks apply pastel, muted and deep presets, wrap from the fifth page back to the first and retain the exact colors after save/reload.
+
+## Select text when editing labels (0.4.22)
+
+Double-clicking a node or connector opens its inline text editor with the entire label selected, including multiline text. Typing replaces the selected label immediately. The same selection behavior applies when opening label editing from the keyboard or menu.
+
+Release validation passed all 53 test files / 220 tests with bounded concurrency, TypeScript checking, the production library build and Node ESM imports.
