@@ -432,6 +432,439 @@
   resolved "https://registry.npmmirror.com/@juggle/resize-observer/-/resize-observer-3.4.0.tgz#08d6c5e20cf7e4cc02fd181c4b0c225cd31dbb60"
   integrity sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==
 
+"@leafer-in/interface@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-in/interface/-/interface-2.1.0.tgz#b4ec18b9d6823cc4efbb202578a18d6e4c453dd4"
+  integrity sha512-vEVAZrQurvKauRo7FT2KTod9QgLzUEvIDYbaqCSu1XWYOtS04J6F/+5tDfFDKH3h570ETKcrEgruO/2H6QtMjw==
+
+"@leafer-in/viewport@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-in/viewport/-/viewport-2.1.0.tgz#3f7ea8ab1297e45960494e55532606ccdb8f4552"
+  integrity sha512-1LJ9HKPMxobDYAt9EDwYs5M1LY2Gt+HRHZrvvxaaMoLJjG+AyjUz3UV1ZH1IQSLfR3gbBJXD34BjKYnCaViEBw==
+
+"@leafer-ui/app@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/app/-/app-2.1.0.tgz#447fedd7865f725a5f0b0f5d99139b19e221ce52"
+  integrity sha512-4aHPDaowSyxaNIosV09zzd5KznWe1/CyLI32hM2OY2nUWqa/wEUL3FmyPPyxwNo7qO71vJ/EfeBnXi0UWhOHaA==
+  dependencies:
+    "@leafer-ui/data" "2.1.0"
+    "@leafer-ui/display" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/bounds@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/bounds/-/bounds-2.1.0.tgz#105e31525b2076306d0a56bf6ec3536c13311447"
+  integrity sha512-FUlRYFd2nDVWyv9+/gbRP2S190EiB42qdhADGKpTYWNTA4KQnECN9pxYtHLH34HILi++zUJIznmb+Th18otuJg==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/color@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/color/-/color-2.1.0.tgz#0042138201e9046c8b3d3c867278228e57e94cbf"
+  integrity sha512-+eZ1446frvGeyMLriunYnk1iS1KK2M1ImH/Two106lHFHTlgGUkYfukIozIrWoQ360pCidqtiC1V5JMcBRYeWg==
+  dependencies:
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/core@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/core/-/core-2.1.0.tgz#7ce567ce56b8cf92914addb94603fe90195d85f1"
+  integrity sha512-CkdtMtIqyo1mNRf4Bk4nGpfpNsJyfrHdUSQ9ESBl12Lo0evfAtVYbtnJuVL/3ga+mML815KgxZJQ9HnlZkcw2A==
+  dependencies:
+    "@leafer-ui/app" "2.1.0"
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer-ui/event" "2.1.0"
+    "@leafer-ui/hit" "2.1.0"
+    "@leafer-ui/interaction" "2.1.0"
+
+"@leafer-ui/data@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/data/-/data-2.1.0.tgz#52decea2fe72f39c972bff5a616cf8cdd326a553"
+  integrity sha512-z/azY6SQzvvN1BGaYD+KfaWAGhs1DPkDwjs7ZmMwK478qK101EiikURK8kabMuFqmSlux1t3ixMbRTuez3BRTA==
+  dependencies:
+    "@leafer-ui/external" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/decorator@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/decorator/-/decorator-2.1.0.tgz#94af21c5560239793d7a59573c6bbba4b9541e3e"
+  integrity sha512-gamfB11jE3xpxPbCWM7SV8jPeV/M683NazqXHeiMJOJiWMOJhsEPK4SHfPmEI6kwmVi+owGBTnC7Ar+pBnwyOQ==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/display-module@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/display-module/-/display-module-2.1.0.tgz#2ff639f83a6dd5fc7cc4285a818a61aac1f2a83e"
+  integrity sha512-ZCxTq4FwDNhM+ELPtcb+yxkt+m+bYDLBE/VwN398KidpH4KJX3EXZeY2fA5EpbTnp+nBsOttyGCoB1Rb7aWzTw==
+  dependencies:
+    "@leafer-ui/bounds" "2.1.0"
+    "@leafer-ui/data" "2.1.0"
+    "@leafer-ui/render" "2.1.0"
+
+"@leafer-ui/display@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/display/-/display-2.1.0.tgz#b7f5ee5507f1b3de20ebe96fee199f144f1baede"
+  integrity sha512-+PWfz4XPLspf2gVdENw/mI+6aZvk5rZjdOIOKR9OLXMNGyQh4DgEnO0aGo++w3omH6oO/CIpSe4bcxHqK4GXuw==
+  dependencies:
+    "@leafer-ui/data" "2.1.0"
+    "@leafer-ui/decorator" "2.1.0"
+    "@leafer-ui/display-module" "2.1.0"
+    "@leafer-ui/external" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/draw@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/draw/-/draw-2.1.0.tgz#7c530a4947daed9705b9122f6fdca31091fbf06a"
+  integrity sha512-8dl8N9cldwE9/Qvvf+mPmYDYaGrMhqMcpn0JXJC3fYC8sFNEvAteZs4gl2NGfzkhKylnXhIbTn9kJm2X1B50Qg==
+  dependencies:
+    "@leafer-ui/decorator" "2.1.0"
+    "@leafer-ui/display" "2.1.0"
+    "@leafer-ui/display-module" "2.1.0"
+    "@leafer-ui/external" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/effect@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/effect/-/effect-2.1.0.tgz#f79ddbe4adca6a906509ba9e43a2ade90835efd1"
+  integrity sha512-3HBfvXV/ez9dux1PE+/hWGnKjZ7J2D+FpSnQWGjYn950JKJdsBCFo5X8Ytog+wXAqu6ylYFTqRGfdoTj9wsubg==
+  dependencies:
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/event@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/event/-/event-2.1.0.tgz#b74eff3adc019e784681f355f58a222f365b918b"
+  integrity sha512-v8l2pOTDFjyy9TsWjGIZ7ixBFjKCX31OzMj9A8gvnbAZxFUe/T80Lvt59MJv2WQVa2bgjWHhZ/EmtXFdAreG+A==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/external@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/external/-/external-2.1.0.tgz#97ac3336f07f94649951b80a7fe83a4cc713fa1f"
+  integrity sha512-tT+EUyYBBRXC4ENUH1Zbo8fShG7TJXkw875FXsXYWx/ylusxCqYw5DJEHXmHEgBq1awhdaG17YFT70NvVGaLIg==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/hit@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/hit/-/hit-2.1.0.tgz#df58091bb792a28efb806b61da5a71e11ff3f8b0"
+  integrity sha512-+Kwumyhp/acOCHDD+JBciufZwORCRMLQRHgkYwPDBPe/8k1g23MN2fhVq6BcU3MQ4elYBC791/YRXcnLyQ0r+A==
+  dependencies:
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/interaction-web@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/interaction-web/-/interaction-web-2.1.0.tgz#546c16e0c8326d3b978ffc2fb7062e05e138e030"
+  integrity sha512-MfA4EP0TmpA5dNRUfLE/uxaBVxcmZewBj4/v6JwgH0nUJq9yFj9veyuui8iAY4n/Z9yCLzQ5vKtQ3QZZb77z8g==
+  dependencies:
+    "@leafer-ui/core" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/interaction@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/interaction/-/interaction-2.1.0.tgz#1eb11196c0e10611247bf7decde276c7661ef803"
+  integrity sha512-Ui5NtoQAhShLXnAsAlvv0we9vpXKQBOG6uu82XMbOLzWktE61FeK4UB9tLDBnv/agxVORLCgq/PcHEHDSi0XRw==
+  dependencies:
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer-ui/event" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/interface@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/interface/-/interface-2.1.0.tgz#6c627fb24a1f1e99bd8eb2f1addabef7d9372c70"
+  integrity sha512-9xbjCWrONICF3PmSBbi/2MTvFCHY2mhzMIPdH01AHVhxH/A+GDpgJ2lhJCRkrS9N16HNe1gLc+mDupMEXp6gGw==
+  dependencies:
+    "@leafer/interface" "2.1.0"
+
+"@leafer-ui/paint@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/paint/-/paint-2.1.0.tgz#027abd792abbcbc137fa6e645df8ce10fc9b2ad9"
+  integrity sha512-+Wosy0r78CJ3UY80pSdusrimtRByg9yRsAtxrUV8h0Af7FX3yoneSXdwQCYD8G7urwlSbRKBZu50hE/JfvjpFQ==
+  dependencies:
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/partner@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/partner/-/partner-2.1.0.tgz#0ee926ddda81edc4cfd13d00657730dce643450a"
+  integrity sha512-guIZPFDVaITco7jiRRq0Ai72by1ATfLLybiLyI3VjNcWpB4tcrIaQUIfhNZ/hfNcBjCDQcA0jYOuk2m1lmQEjg==
+  dependencies:
+    "@leafer-ui/color" "2.1.0"
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer-ui/effect" "2.1.0"
+    "@leafer-ui/paint" "2.1.0"
+    "@leafer-ui/text" "2.1.0"
+
+"@leafer-ui/render@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/render/-/render-2.1.0.tgz#08a0feec2dd6e218334d587984e7b6f0b4c9a5a1"
+  integrity sha512-6SmbCHqgWlKd/CahyiFlT4jyYupW4+/y5l/ErTfTFRdcWdWLbi+p0sn3RK5KjS6hTfcABYCK2WJzcQP0dZeKTA==
+  dependencies:
+    "@leafer-ui/external" "2.1.0"
+
+"@leafer-ui/text@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/text/-/text-2.1.0.tgz#c4dc1487ea810a6f3bcd220aa9e162556daa70b1"
+  integrity sha512-77Vgusa9thdTItsngi9QCh+v/YkKGJF0rimJL6bf9PawQm/77jlRDgqI2PNLJvc1N/7+Dv/eOay+5q97yOZLRg==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer-ui/web@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer-ui/web/-/web-2.1.0.tgz#4b9d25c5cb54cbfb487d888a10d64d80ecac1fc1"
+  integrity sha512-YJCm0/n43EaDkXhrZLpEWq+PEHhaGW1Wc5ORppSxGpDUSWyjzUWtqmEM2m5kI6QmarZzsmqr4C87qoZRK8hiSg==
+  dependencies:
+    "@leafer-in/interface" "2.1.0"
+    "@leafer-ui/core" "2.1.0"
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer-ui/interaction-web" "2.1.0"
+    "@leafer-ui/interface" "2.1.0"
+    "@leafer-ui/partner" "2.1.0"
+    "@leafer/interface" "2.1.0"
+    "@leafer/partner" "2.1.0"
+    "@leafer/web-core" "2.1.0"
+
+"@leafer/canvas-web@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/canvas-web/-/canvas-web-2.1.0.tgz#9a992eb3e7da0ce5ad853f050d8e696858343ab2"
+  integrity sha512-2cLarGxKgdlErDHHoYjmUN5NlD9UOT0ri2CHzsFgqto0PBXm6uO8Ca5JyB6VnwixcHsxIAaUo17Egot7gyB15w==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer/canvas@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/canvas/-/canvas-2.1.0.tgz#ef8790fd6d2e194f3d68c53750a18ec12a13e931"
+  integrity sha512-Hha8FU53cH1wyl8Kkqial34vYG1ofpLbC8ZhcwbOo1SqSXr3YAKZRwJoDdFLyMnYC80Olx6Apsy4txDgqzuWxA==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/debug" "2.1.0"
+    "@leafer/file" "2.1.0"
+    "@leafer/list" "2.1.0"
+    "@leafer/math" "2.1.0"
+    "@leafer/path" "2.1.0"
+    "@leafer/platform" "2.1.0"
+
+"@leafer/core@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/core/-/core-2.1.0.tgz#d68751cad5b1eefb9dd02262c595283fbd679f03"
+  integrity sha512-bLX28zmmSOLw53m6T3bPt321vhlvd40SH/BqNpj0SveoZyBzEKw+qo4eAcAx3v4eBZKubEcys7toQJg3eq2fHw==
+  dependencies:
+    "@leafer/canvas" "2.1.0"
+    "@leafer/data" "2.1.0"
+    "@leafer/debug" "2.1.0"
+    "@leafer/decorator" "2.1.0"
+    "@leafer/display" "2.1.0"
+    "@leafer/display-module" "2.1.0"
+    "@leafer/event" "2.1.0"
+    "@leafer/file" "2.1.0"
+    "@leafer/helper" "2.1.0"
+    "@leafer/image" "2.1.0"
+    "@leafer/layout" "2.1.0"
+    "@leafer/list" "2.1.0"
+    "@leafer/math" "2.1.0"
+    "@leafer/path" "2.1.0"
+    "@leafer/platform" "2.1.0"
+    "@leafer/task" "2.1.0"
+
+"@leafer/data@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/data/-/data-2.1.0.tgz#a9751c7a4a6004a9e8a80c3d0a5558f8c3d9c6c0"
+  integrity sha512-yRYMIKPuMx9IDnapNZ1sBypl8k+t6rOwRYnVZAJP4U1zwsAd84GlQxzBu7ui95FXgoMxpgrLMt+XvEU1T6YBMg==
+
+"@leafer/debug@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/debug/-/debug-2.1.0.tgz#899b2813b42077b9ac1ac8961ce755ab410a0bcf"
+  integrity sha512-3/2mLTKXJLJZcrBlzdSoSviLrtxtyyi8WCHDbzxMz+Rs3Ji/aMgFmhcKTcEEgl/1qo4BgoivPwqhJu6NPysWpg==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/math" "2.1.0"
+
+"@leafer/decorator@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/decorator/-/decorator-2.1.0.tgz#dff305022bf2baafd4a211711a7368533ee3c42a"
+  integrity sha512-+eG/cffEg4X7q7FD7DaOWglgjn/AL6VEyRZCwSXMsJm6VYgGNIY6A4ysA+yraw9nAXJW2pPvJIAf7jhbKIGm1A==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/debug" "2.1.0"
+    "@leafer/platform" "2.1.0"
+
+"@leafer/display-module@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/display-module/-/display-module-2.1.0.tgz#20070a37ce448ce6fc04c86a901cdbd77048f4ed"
+  integrity sha512-GkVhTijlcAeWjK1ANbkFqR4Ix3lSWaA28zeDdck4tvHXdyP7g42OiRf8IW5riCsTaveKw97l99urlE8QgC89qg==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/debug" "2.1.0"
+    "@leafer/event" "2.1.0"
+    "@leafer/helper" "2.1.0"
+    "@leafer/math" "2.1.0"
+
+"@leafer/display@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/display/-/display-2.1.0.tgz#4502c9bcd07f1978120a7b6259a96dd7392f6ce7"
+  integrity sha512-EELU3zbgzFrobZqH8w9W+kt38LEYVwUzt6erUVPXHXq1An2FbolWUoTCPbYHazUqz/B/tNKPifVK7yIXGh0X4Q==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/debug" "2.1.0"
+    "@leafer/decorator" "2.1.0"
+    "@leafer/display-module" "2.1.0"
+    "@leafer/event" "2.1.0"
+    "@leafer/helper" "2.1.0"
+    "@leafer/image" "2.1.0"
+    "@leafer/layout" "2.1.0"
+    "@leafer/math" "2.1.0"
+    "@leafer/platform" "2.1.0"
+
+"@leafer/event@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/event/-/event-2.1.0.tgz#86757dc0556ab28e95e4011daaa1670ff7ffb96d"
+  integrity sha512-tGHWi+XtVSf+yvOlmRiIqFBT8EMBe3SsI5ZPX41cUNTd1f4q8ZYUGzWMvmMraDfdIaGedKiUmQkp0/BvCY8Unw==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/decorator" "2.1.0"
+    "@leafer/math" "2.1.0"
+    "@leafer/platform" "2.1.0"
+
+"@leafer/file@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/file/-/file-2.1.0.tgz#e8f22b05a750ab30699ebf9ae510c5c941674665"
+  integrity sha512-jI3OGcg74aIAjAldHoy+7mii4q+Gh41aKFjs51ZT0jnOLlHYXzQiWvAFBolWpvgLP6lnN/VtfIT4u1ANoGwqzA==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/debug" "2.1.0"
+    "@leafer/platform" "2.1.0"
+    "@leafer/task" "2.1.0"
+
+"@leafer/helper@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/helper/-/helper-2.1.0.tgz#bb2ccf44e38913a241f7f01bc0a8f8885293b91f"
+  integrity sha512-hF9a/V3ftAKRc5t1/JAoEf6IVylfYnrFiA0xVFvxSqZEoWF2q3oEFaXU8QHPYTzVhtOc0SezXc6W5XxXEPT+WQ==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/math" "2.1.0"
+    "@leafer/platform" "2.1.0"
+
+"@leafer/image-web@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/image-web/-/image-web-2.1.0.tgz#a27fe3f16aa4d57a8b8099134fd4104f06d0db4a"
+  integrity sha512-Z30CXLwRs0QJujP6l9p9YURVxDxLsuTiyrWzxnixWNa72qew+oxaZcff7aXIoMpnS5whfMdIh66SFVBjlWO3Sw==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer/image@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/image/-/image-2.1.0.tgz#af9113c269b5c63cba7e3f069a40564fc6f7270d"
+  integrity sha512-cYMlfTUgDfCZuz1hD0knoQN4Zmz5z0jiWUSiVMxdgmeWF46N/r759bhyXsjzJ1iN3kIO/VsToHpQAsuJfzFOiQ==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/file" "2.1.0"
+    "@leafer/math" "2.1.0"
+    "@leafer/platform" "2.1.0"
+    "@leafer/task" "2.1.0"
+
+"@leafer/interface@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/interface/-/interface-2.1.0.tgz#64452363979323e2f6b44c89fd9f386970f520eb"
+  integrity sha512-D62je4169phSYd4xV8HLB/0WXjVmVe3gtHFRqNGaLAQFn6kZti7YVSYglR04zu2Y5PcOGjQdoh48+lrLMb2C1g==
+
+"@leafer/layout@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/layout/-/layout-2.1.0.tgz#1f1f595d5d040ba15159049faf1e7fde7f5be5d8"
+  integrity sha512-qEm5dzENSM5c7HMZu8T3RMkpgTT5ha+emu1/zM3I5NHdZ57Uu82KhrVZlcuKn59kMi3IYzpMiG9BFqrCa9vHvg==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/helper" "2.1.0"
+    "@leafer/math" "2.1.0"
+    "@leafer/platform" "2.1.0"
+
+"@leafer/layouter@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/layouter/-/layouter-2.1.0.tgz#d57a2e2f7434dc4e4469b29c1d503b29a5094ee1"
+  integrity sha512-ExV1W1TXoL7NaKLSH9KSYoCBnRvowwrY0Uwgdf5a5rW0OKvQSyPhu+O/cLqtNEDnjztRTch6Z/HCmNKgAd2ZiA==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer/list@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/list/-/list-2.1.0.tgz#8918c6aa1aa7e3a03545288be4f885022846e733"
+  integrity sha512-SBUh8SpON3dYM8HwrFcxRGpm8XZZo427GEKwA1jO9k1nuWjIPsRsYYH9h1MhM9+zUM0lqVFfXtUMjN72RrbYbw==
+
+"@leafer/math@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/math/-/math-2.1.0.tgz#89bd133ba7b58cc381985c65f3244a70598463f0"
+  integrity sha512-OrXiwwFM8PLUnMwHZUKNIrrOYgBHCcVfjnLtywG0uO4r6yoP1FvJAm9tOJft0CwJ/U6hVSfDY/pHIXOR1Pd1kA==
+
+"@leafer/partner@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/partner/-/partner-2.1.0.tgz#96a6e8702e2c9ff315fcbb1691fa64d5123f2049"
+  integrity sha512-vwd9RgoPC2ONAuPjPdZAhs1L+XUdZ06McvzksVtJu30KNzCENS9IrqJ7Z1afo0IHFckcLBC1OOa1GSWdaGWo8Q==
+  dependencies:
+    "@leafer/core" "2.1.0"
+    "@leafer/layouter" "2.1.0"
+    "@leafer/renderer" "2.1.0"
+    "@leafer/selector" "2.1.0"
+    "@leafer/watcher" "2.1.0"
+
+"@leafer/path@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/path/-/path-2.1.0.tgz#cecade5f59257dd8782e9a11a03b3c4ec6aa1d76"
+  integrity sha512-xjB+0QirbI+ouYjqqbGW1BkVxuCwKjO1K8pTJovsivoaQ6/RJy5HNa23eSBa/hMA8e37xxfVYlw2wz4FtROhug==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/debug" "2.1.0"
+    "@leafer/math" "2.1.0"
+
+"@leafer/platform@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/platform/-/platform-2.1.0.tgz#71122846528048b973d24ecbb09349b8b06446d1"
+  integrity sha512-sMQERxF6TfyabJumUV5j+8MA8QPDMgE7kg69W0+6F1Fq2kivefo6qEVJ9HwhgvF2fYrk+GQ3eEsvlUHedYDzvg==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/debug" "2.1.0"
+
+"@leafer/renderer@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/renderer/-/renderer-2.1.0.tgz#dbeccd777849e27798a88b2f16bd1f2f18b893da"
+  integrity sha512-YbSS6DJyhtO/DPVZ6tO2oy5XN23d3NX1NMrG+c8sVoMzG0Xm3GCWkW/yp2LNllKMLMlvuovxGKdUWr83SyXiOw==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer/selector@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/selector/-/selector-2.1.0.tgz#3651073afbfec6d12523b391ce0d31c01b53edfb"
+  integrity sha512-Q1DNXGEe0VjdQ5xtHKJFzRnFLL40JaBMzCCr0xMXmPFk9lfCHJC0uLbZCg0aU8mzzFJhWFZSrbZ3Z8tWFuyYcA==
+  dependencies:
+    "@leafer/core" "2.1.0"
+
+"@leafer/task@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/task/-/task-2.1.0.tgz#3a1b6f9f721b72446cf72f0f39e5285584038494"
+  integrity sha512-B7GDaBiCKVg5l2y6oSBOlPoeo2QjXayO9yHIic/FFerxtaNnEjYIZPNTTUeZmepMRv8/wLbvFtDubIIYUfNudQ==
+  dependencies:
+    "@leafer/debug" "2.1.0"
+    "@leafer/math" "2.1.0"
+
+"@leafer/watcher@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/watcher/-/watcher-2.1.0.tgz#94d968ceb59c7f17c3e840492cf7d33c6f32c222"
+  integrity sha512-jgm4PWCxdQhN7WiYv00OqzjVxI2ZFzqBNDMG8IHdsPICWKD53tUf8ItJ6Qrolf/+IfWPHz5eUbhDcJYRVian/w==
+  dependencies:
+    "@leafer/data" "2.1.0"
+    "@leafer/event" "2.1.0"
+    "@leafer/list" "2.1.0"
+
+"@leafer/web-core@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/@leafer/web-core/-/web-core-2.1.0.tgz#7d6c5ebab0d2cbc5a86b46884bd732385fac4b87"
+  integrity sha512-DaVMQ1mAO2Gjnsr3JG7uYr5muC8TFaMrY32IHToLXhURwnHsDOScT5qe4BYgYTShrBa2XdXLlu09BDNyePAAoQ==
+  dependencies:
+    "@leafer/canvas-web" "2.1.0"
+    "@leafer/core" "2.1.0"
+    "@leafer/image-web" "2.1.0"
+    "@leafer/interface" "2.1.0"
+    "@leafer/partner" "2.1.0"
+
 "@microsoft/api-extractor-model@7.33.11":
   version "7.33.11"
   resolved "https://registry.npmmirror.com/@microsoft/api-extractor-model/-/api-extractor-model-7.33.11.tgz#bd0176a07f6aaa02da10c12283347ef7ad890a28"
@@ -1409,6 +1842,22 @@ kolorist@^1.8.0:
   version "1.8.0"
   resolved "https://registry.npmmirror.com/kolorist/-/kolorist-1.8.0.tgz#edddbbbc7894bc13302cdf740af6374d4a04743c"
   integrity sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==
+
+leafer-ui@2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/leafer-ui/-/leafer-ui-2.1.0.tgz#e77747b931d64c2f15e080242f8c5de0c13b6978"
+  integrity sha512-MoLnhPAO5HRFzBFT0mdIAE4+0TDi5ikLWVrzLrPaRhBFU6dAH8diot0rIsDCsNaqOt27eYoBuL/p1Y+UppDwQQ==
+  dependencies:
+    "@leafer-in/interface" "2.1.0"
+    "@leafer-ui/core" "2.1.0"
+    "@leafer-ui/draw" "2.1.0"
+    "@leafer-ui/interaction-web" "2.1.0"
+    "@leafer-ui/interface" "2.1.0"
+    "@leafer-ui/partner" "2.1.0"
+    "@leafer-ui/web" "2.1.0"
+    "@leafer/core" "2.1.0"
+    "@leafer/interface" "2.1.0"
+    "@leafer/partner" "2.1.0"
 
 lib0@^0.2.74, lib0@^0.2.85, lib0@^0.2.99:
   version "0.2.117"

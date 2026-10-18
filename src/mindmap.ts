@@ -96,15 +96,22 @@ export function parseMindClipboard(raw: string): MindMapNode | null {
   } catch { return null }
 }
 
+const mindTextWidth = (text: string, fontSize: number) => Array.from(text).reduce((sum, char) => sum + (/^[\x00-\xff]$/.test(char) ? .58 : 1) * fontSize, 0)
+export function wrapMindText(text: string, width: number, fontSize: number): string[] {
+  return text.split('\n').flatMap(line => {
+    const rows: string[] = []; let row = '', used = 0
+    for (const char of line) {
+      const size = mindTextWidth(char, fontSize)
+      if (row && used + size > width) { rows.push(row); row = ''; used = 0 }
+      row += char; used += size
+    }
+    rows.push(row); return rows
+  })
+}
 export function mindNodeSize(node: MindMapNode, root: MindMapNode) {
-  const primary = node.id === root.id
-  const lines = node.topic.split('\n')
-  const unit = node.fontSize || (primary ? 24 : 16)
-  // Latin letters occupy roughly half an em; CJK and emoji need a full em.
-  const length = (line: string) => Array.from(line).reduce((sum, char) => sum + (/^[\x00-\xff]$/.test(char) ? .58 : 1) * unit, 0)
-  const width = Math.max(primary ? 144 : 88, Math.min(300, Math.max(...lines.map(length)) + 40))
-  const rows = lines.reduce((count, line) => count + Math.max(1, Math.ceil(length(line) / (width - 40))), 0)
-  return { width, height: Math.max(primary ? 64 : 42, rows * (unit * 1.45) + 22) }
+  const primary = node.id === root.id, fontSize = node.fontSize || (primary ? 18 : 16)
+  const width = Math.max(primary ? 160 : 128, Math.min(260, Math.max(...node.topic.split('\n').map(line => mindTextWidth(line, fontSize))) + 32))
+  return { width, height: Math.max(primary ? 48 : 42, wrapMindText(node.topic, width - 28, fontSize).length * fontSize * 1.4 + 16) }
 }
 
 export function visitVisibleMind(node: MindMapNode, visit: (node: MindMapNode, parent: MindMapNode | null, depth: number) => void, parent: MindMapNode | null = null, depth = 0) {
@@ -115,10 +122,11 @@ export function visitVisibleMind(node: MindMapNode, visit: (node: MindMapNode, p
 /** Layout reserves each subtree's full height; long and multiline topics cannot overlap. */
 export function layoutMindTree(root: MindMapNode) {
   root.x = 0; root.y = 0
-  const heights = new Map<string, number>()
+  const heights = new Map<string, number>(), sizes = new Map<string, ReturnType<typeof mindNodeSize>>()
+  visitVisibleMind(root, node => sizes.set(node.id, mindNodeSize(node, root)))
   const measure = (node: MindMapNode): number => {
     const children = node.expanded === false ? [] : node.children || []
-    const height = Math.max(mindNodeSize(node, root).height, children.reduce((sum, child) => sum + measure(child), 0) + Math.max(0, children.length - 1) * 24)
+    const height = Math.max(sizes.get(node.id)!.height, children.reduce((sum, child) => sum + measure(child), 0) + Math.max(0, children.length - 1) * 22)
     heights.set(node.id, height)
     return height
   }
@@ -127,18 +135,18 @@ export function layoutMindTree(root: MindMapNode) {
   top.forEach((node, index) => { node.side ||= index % 2 ? 'left' : 'right' })
   const place = (node: MindMapNode, parent: MindMapNode, y: number, side: 'left' | 'right') => {
     node.side = side
-    node.x = (parent.x || 0) + (side === 'right' ? 1 : -1) * (mindNodeSize(parent, root).width / 2 + (parent === root ? 72 : 44) + mindNodeSize(node, root).width / 2)
+    node.x = (parent.x || 0) + (side === 'right' ? 1 : -1) * (sizes.get(parent.id)!.width / 2 + 72 + sizes.get(node.id)!.width / 2)
     node.y = y
     const children = node.expanded === false ? [] : node.children || []
-    const height = children.reduce((sum, child) => sum + heights.get(child.id)!, 0) + Math.max(0, children.length - 1) * 24
+    const height = children.reduce((sum, child) => sum + heights.get(child.id)!, 0) + Math.max(0, children.length - 1) * 22
     let cursor = y - height / 2
-    children.forEach(child => { const h = heights.get(child.id)!; place(child, node, cursor + h / 2, side); cursor += h + 24 })
+    children.forEach(child => { const h = heights.get(child.id)!; place(child, node, cursor + h / 2, side); cursor += h + 22 })
   }
   if (root.expanded === false) return
   for (const side of ['left', 'right'] as const) {
     const branches = top.filter(node => node.side === side)
-    let cursor = -(branches.reduce((sum, node) => sum + heights.get(node.id)!, 0) + Math.max(0, branches.length - 1) * 24) / 2
-    branches.forEach(node => { const h = heights.get(node.id)!; place(node, root, cursor + h / 2, side); cursor += h + 24 })
+    let cursor = -(branches.reduce((sum, node) => sum + heights.get(node.id)!, 0) + Math.max(0, branches.length - 1) * 22) / 2
+    branches.forEach(node => { const h = heights.get(node.id)!; place(node, root, cursor + h / 2, side); cursor += h + 22 })
   }
 }
 

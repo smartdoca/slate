@@ -1,17 +1,16 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
-import { Graph, type Node } from '@antv/x6'
-import { Export } from '@antv/x6-plugin-export'
-import { Selection } from '@antv/x6-plugin-selection'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
+import { MindMapCanvas } from '../mindmapCanvas'
 import { AlignLeft, Bold, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, CircleHelp, CornerDownRight, Download, Focus, GitBranch, ListTree, Maximize2, Minus, Network, Palette, Pencil, Plus, Redo2, Save, Search, Settings2, Trash2, Undo2, X } from 'lucide-react'
-import '@antv/x6-plugin-selection/dist/index.css'
 import { createId } from '../data'
 import { cloneMind, findMind, findMindParent, insertMindParent, mindToOutline, normalizeMind, parseMindClipboard, parseMindOutline, removeMind, reparentMind, reorderMind, setBranchSide, visitVisibleMind, walkMind } from '../mindmap'
-import { EDITOR_HEIGHT, EDITOR_WIDTH, exportGraphSvg, MIND_THEMES, renderMindGraph } from '../mindmapGraph'
+import { createMindScene, exportMindSvg, MIND_THEMES } from '../mindmapGraph'
 import { useEditorI18n } from '../i18n'
 import type { MindMapData, MindMapNode, MindMapNodeStyle } from '../types'
 
 type Editing = { id: string; text: string; left: number; top: number; width: number; height: number }
 type Snapshot = MindMapData
+type ControlPoint = { left: number; top: number; offset: number }
+const controlStyle = ({ left, top, offset }: ControlPoint): CSSProperties => ({ left, top, '--mind-control-offset': `${offset}px` } as CSSProperties)
 const copy = (data: Snapshot): Snapshot => ({ ...data, nodeData: cloneMind(data.nodeData) })
 const CLIPBOARD_TYPE = 'application/x-slate-kit-mindmap+json'
 const styles: Array<MindMapNodeStyle | ''> = ['', 'rounded', 'solid', 'pill', 'square', 'underline']
@@ -24,22 +23,24 @@ function Tool({ label, children, active, ...props }: { label: string; children: 
 export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; close(): void; commit(data: MindMapData, svg: string, size: { width: number; height: number }): void | Promise<void> }) {
   const { t } = useEditorI18n()
   const tRef = useRef(t); tRef.current = t
-  const dialogRef = useRef<HTMLDivElement>(null), canvasRef = useRef<HTMLDivElement>(null), graphRef = useRef<Graph | null>(null)
-  const dataRef = useRef<Snapshot>({ ...data, nodeData: normalizeMind(cloneMind(data.nodeData), true, { root: t('ui.centralTopic'), child: t('ui.newTopic') }) })
+  const dialogRef = useRef<HTMLDivElement>(null), canvasRef = useRef<HTMLDivElement>(null), graphRef = useRef<MindMapCanvas | null>(null), controlsRef = useRef<HTMLDivElement>(null)
+  const [initialData] = useState<Snapshot>(() => ({ ...data, nodeData: normalizeMind(cloneMind(data.nodeData), true, { root: t('ui.centralTopic'), child: t('ui.newTopic') }) }))
+  const dataRef = useRef(initialData)
   const root = () => dataRef.current.nodeData
   const selectionRef = useRef(root().id)
   const [selectedId, setSelectedId] = useState(selectionRef.current)
-  const [, setRevision] = useState(0)
+  const [revision, setRevision] = useState(0)
   const [view, setView] = useState<'map' | 'outline'>('map'), viewRef = useRef(view); viewRef.current = view
   const [panel, setPanel] = useState<'topic' | 'map' | null>(() => typeof window !== 'undefined' && window.innerWidth <= 740 ? null : 'map')
   const [zen, setZen] = useState(false)
   const [zoom, setZoom] = useState(100)
   const [subtreeStyle, setSubtreeStyle] = useState(false)
-  const [quick, setQuick] = useState({ left: -100, top: -100 })
-  const [folds, setFolds] = useState<Array<{ id: string; left: number; top: number; collapsed: boolean; count: number }>>([])
+  const [quick, setQuick] = useState<ControlPoint>({ left: -100, top: -100, offset: 0 })
+  const [folds, setFolds] = useState<Array<ControlPoint & { id: string; collapsed: boolean; count: number }>>([])
   const [editing, setEditing] = useState<Editing | null>(null), editingRef = useRef<Editing | null>(null)
   const editRef = useRef<HTMLTextAreaElement>(null)
-  const history = useRef({ past: [] as Snapshot[], future: [] as Snapshot[], present: copy(dataRef.current) })
+  const [initialHistory] = useState(() => ({ past: [] as Snapshot[], future: [] as Snapshot[], present: copy(initialData) }))
+  const history = useRef(initialHistory)
   const baseline = useRef('')
   const [dirty, setDirty] = useState(false), [saving, setSaving] = useState(false), busyRef = useRef(false)
   const [error, setError] = useState(''), [confirmClose, setConfirmClose] = useState(false), [help, setHelp] = useState(false)
@@ -49,42 +50,44 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
   const originalFocus = useRef<HTMLElement | null>(null)
   const selected = findMind(root(), selectedId) || root()
   const theme = MIND_THEMES[dataRef.current.theme || 'classic']
-  const allNodes: MindMapNode[] = []; walkMind(root(), node => allNodes.push(node))
+  const allNodes = useMemo(() => { const nodes: MindMapNode[] = []; walkMind(root(), node => nodes.push(node)); return nodes }, [revision])
+  const nodeById = useMemo(() => new Map(allNodes.map(node => [node.id, node])), [allNodes])
   const matches = search?.trim() ? allNodes.filter(node => node.topic.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) : []
 
-  const positionControls = useCallback(() => {
-    const graph = graphRef.current, canvas = canvasRef.current
-    if (!graph || !canvas || !canvas.clientWidth) return
-    const shell = canvas.getBoundingClientRect()
-    const points: typeof folds = []
-    visitVisibleMind(dataRef.current.nodeData, node => {
-      const nodeView = graph.findViewByCell(node.id); if (!nodeView) return
-      const rect = nodeView.container.getBoundingClientRect(), sign = node.side === 'left' ? -1 : 1
-      const edge = (sign < 0 ? rect.left : rect.right) - shell.left
-      const top = rect.top + rect.height / 2 - shell.top
-      if (node.id === selectionRef.current) setQuick({ left: edge + sign * (node.children?.length ? 47 : 22), top })
-      if (node.children?.length) points.push({ id: node.id, left: edge + sign * 19, top, collapsed: node.expanded === false, count: node.children.length })
-    })
-    setFolds(points); setZoom(Math.round(graph.zoom() * 100))
+  const updateViewport = useCallback(() => {
+    const canvas = graphRef.current, controls = controlsRef.current; if (!canvas) return
+    const { x, y, scale } = canvas.viewport()
+    if (controls) { controls.style.transform = `translate(${x}px, ${y}px) scale(${scale})`; controls.style.setProperty('--mind-inverse-scale', String(1 / scale)) }
+    setZoom(Math.round(scale * 100))
   }, [])
+  const positionControls = useCallback(() => {
+    const graph = graphRef.current; if (!graph) return
+    const byId = new Map(graph.nodes().map(node => [node.id, node])), points: typeof folds = []
+    visitVisibleMind(dataRef.current.nodeData, node => {
+      const rect = byId.get(node.id); if (!rect) return
+      const sign = node.side === 'left' ? -1 : 1, edge = rect.x + (sign < 0 ? 0 : rect.width), top = rect.y + rect.height / 2
+      if (node.id === selectionRef.current) setQuick({ left: edge, top, offset: sign * (node.children?.length ? 47 : 22) })
+      if (node.children?.length) points.push({ id: node.id, left: edge, top, offset: sign * 19, collapsed: node.expanded === false, count: node.children.length })
+    })
+    setFolds(points); updateViewport()
+  }, [updateViewport])
   const select = useCallback((id: string, reveal = false) => {
-    const graph = graphRef.current, cell = graph?.getCellById(id)
-    if (!graph || !cell) return
-    graph.cleanSelection(); graph.select(cell); selectionRef.current = id; setSelectedId(id)
+    const graph = graphRef.current; if (!graph?.has(id)) return
+    graph.select(id); selectionRef.current = id; setSelectedId(id)
     if (reveal && viewRef.current === 'map') {
-      const rect = graph.findViewByCell(id)?.container.getBoundingClientRect(), canvas = canvasRef.current?.getBoundingClientRect()
+      const rect = graph.rect(id), canvas = canvasRef.current
       if (rect && canvas) {
-        const dx = rect.left < canvas.left + 40 ? canvas.left + 40 - rect.left : rect.right > canvas.right - 60 ? canvas.right - 60 - rect.right : 0
-        const dy = rect.top < canvas.top + 40 ? canvas.top + 40 - rect.top : rect.bottom > canvas.bottom - 60 ? canvas.bottom - 60 - rect.bottom : 0
-        if (dx || dy) { const { tx, ty } = graph.translate(); graph.translate(tx + dx, ty + dy) }
+        const dx = rect.left < 40 ? 40 - rect.left : rect.left + rect.width > canvas.clientWidth - 60 ? canvas.clientWidth - 60 - rect.left - rect.width : 0
+        const dy = rect.top < 40 ? 40 - rect.top : rect.top + rect.height > canvas.clientHeight - 60 ? canvas.clientHeight - 60 - rect.top - rect.height : 0
+        if (dx || dy) { const { x, y } = graph.viewport(); graph.translate(x + dx, y + dy) }
       }
     }
     positionControls()
   }, [positionControls])
   const redraw = useCallback((id = selectionRef.current, layout = false) => {
     const graph = graphRef.current; if (!graph) return
-    renderMindGraph(graph, dataRef.current.nodeData, layout, dataRef.current)
-    select(graph.getCellById(id) ? id : dataRef.current.nodeData.id)
+    graph.sync(createMindScene(dataRef.current.nodeData, layout, dataRef.current))
+    select(graph.has(id) ? id : dataRef.current.nodeData.id)
     setRevision(value => value + 1)
   }, [select])
   const record = useCallback(() => {
@@ -106,12 +109,12 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
   const beginEdit = useCallback((id: string, text?: string) => {
     const node = findMind(dataRef.current.nodeData, id); if (!node || busyRef.current) return
     select(id)
-    const rect = graphRef.current?.findViewByCell(id)?.container.getBoundingClientRect(), shell = canvasRef.current?.getBoundingClientRect()
-    const next = { id, text: text ?? node.topic, left: rect && shell ? rect.left - shell.left : 0, top: rect && shell ? rect.top - shell.top : 0, width: Math.max(100, rect?.width || 120), height: Math.max(44, rect?.height || 44) }
+    const rect = graphRef.current?.rect(id)
+    const next = { id, text: text ?? node.topic, left: rect?.left || 0, top: rect?.top || 0, width: Math.max(100, rect?.width || 120), height: Math.max(42, rect?.height || 42) }
     editingRef.current = next; setEditing(next)
   }, [select])
   const focusCanvas = () => (viewRef.current === 'outline' ? dialogRef.current?.querySelector<HTMLElement>('.sk-mind-outline') : canvasRef.current)?.focus({ preventScroll: true })
-  const fit = () => { graphRef.current?.zoomToFit({ padding: 90, maxScale: 1 }); positionControls() }
+  const fit = () => graphRef.current?.fit()
   const toggleFold = (id = selectionRef.current) => {
     finishEdit()
     const node = findMind(root(), id); if (!node?.children?.length) return
@@ -164,7 +167,7 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
     if (busyRef.current || !graphRef.current) return
     finishEdit(); busyRef.current = true; setSaving(true); setError('')
     try {
-      const result = await exportGraphSvg(graphRef.current)
+      const result = exportMindSvg(createMindScene(dataRef.current.nodeData, false, dataRef.current))
       await commit(copy(dataRef.current), result.svg, result.size)
     } catch { setError(t('mindmap.saveError')); select(selectionRef.current) }
     finally { busyRef.current = false; setSaving(false) }
@@ -178,7 +181,7 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
     if (!graphRef.current) return
     finishEdit()
     try {
-      const { svg } = await exportGraphSvg(graphRef.current)
+      const { svg } = exportMindSvg(createMindScene(dataRef.current.nodeData, false, dataRef.current))
       const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
       const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${root().topic.replace(/[\\/:*?"<>|]/g, '-').slice(0, 80) || 'mind-map'}.svg`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch { setError(t('mindmap.exportError')) }
@@ -189,7 +192,7 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
     let parent = findMindParent(root(), node.id), changed = false
     while (parent) { if (parent.expanded === false) { parent.expanded = true; changed = true }; parent = findMindParent(root(), parent.id) }
     redraw(node.id, changed); if (changed) record()
-    graphRef.current?.centerCell(graphRef.current.getCellById(node.id)); setMatchIndex((index + matches.length) % matches.length)
+    graphRef.current?.center(node.id); setMatchIndex((index + matches.length) % matches.length)
   }
 
   useEffect(() => {
@@ -200,46 +203,40 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
   }, [])
   useLayoutEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return
-    const graph = new Graph({ container: canvas, width: canvas.clientWidth, height: canvas.clientHeight, background: { color: 'transparent' }, panning: true, mousewheel: { enabled: true, guard: e => e.ctrlKey || e.metaKey, minScale: .2, maxScale: 3, factor: 1.12 }, interacting: { edgeMovable: false }, async: false })
-    graph.use(new Selection({ enabled: true, multiple: false, rubberband: false, showNodeSelectionBox: true, pointerEvents: 'none' })); graph.use(new Export()); graphRef.current = graph
-    redraw(dataRef.current.nodeData.id); history.current.present = copy(dataRef.current); baseline.current = JSON.stringify(dataRef.current)
-    graph.zoomToFit({ padding: canvas.clientWidth <= 740 ? 40 : 90, minScale: canvas.clientWidth <= 740 ? .65 : .2, maxScale: 1 }); positionControls()
-    graph.on('node:click', ({ node }) => { select(node.id); setMenu(null); focusCanvas() })
-    graph.on('node:dblclick', ({ node }) => beginEdit(node.id))
-    graph.on('node:contextmenu', ({ node, e }) => { e.preventDefault(); select(node.id); setMenu({ left: Math.max(8, Math.min(e.clientX, window.innerWidth - 242)), top: Math.max(8, Math.min(e.clientY, window.innerHeight - 380)) }) })
-    graph.on('blank:click', () => { setMenu(null); focusCanvas() })
     let dropTarget: string | null = null
-    const clearTarget = () => { if (dropTarget) graph.findViewByCell(dropTarget)?.container.classList.remove('sk-mind-drop-target'); dropTarget = null }
-    graph.on('node:moving', ({ node, e }) => {
-      clearTarget(); const item = findMind(dataRef.current.nodeData, node.id)
-      if (!item || item === dataRef.current.nodeData) return
-      const point = graph.clientToLocal(e.clientX, e.clientY)
-      const target = graph.getNodes().find(candidate => !findMind(item, candidate.id) && candidate.getBBox().containsPoint(point))
-      if (target && findMindParent(dataRef.current.nodeData, item.id)?.id !== target.id) { dropTarget = target.id; graph.findViewByCell(target)?.container.classList.add('sk-mind-drop-target') }
-      positionControls()
+    const graph = new MindMapCanvas(canvas, {
+      select: id => { select(id); setMenu(null); focusCanvas() },
+      edit: id => beginEdit(id),
+      menu: (id, x, y) => { select(id); setMenu({ left: Math.max(8, Math.min(x, window.innerWidth - 242)), top: Math.max(8, Math.min(y, window.innerHeight - 380)) }) },
+      blank: () => { setMenu(null); focusCanvas() },
+      moving: (id, point) => {
+        const tree = dataRef.current.nodeData, item = findMind(tree, id); if (!item || item === tree) return
+        const descendants = new Set<string>(); walkMind(item, node => descendants.add(node.id))
+        const target = graph.nodes().find(node => !descendants.has(node.id) && point.x >= node.x && point.x <= node.x + node.width && point.y >= node.y && point.y <= node.y + node.height)
+        dropTarget = target && findMindParent(tree, id)?.id !== target.id ? target.id : null
+        graph.highlight(dropTarget)
+      },
+      moved: id => {
+        const tree = dataRef.current.nodeData, item = findMind(tree, id), rootRect = graph.nodes().find(node => node.id === tree.id)
+        if (!item || !rootRect) return
+        const cx = rootRect.x + rootRect.width / 2, cy = rootRect.y + rootRect.height / 2, positions = new Map(graph.nodes().map(node => [node.id, node]))
+        walkMind(tree, current => { const rect = positions.get(current.id); if (rect) { current.x = rect.x + rect.width / 2 - cx; current.y = rect.y + rect.height / 2 - cy } })
+        const { x, y, scale } = graph.viewport(); graph.translate(x + cx * scale, y + cy * scale)
+        let relayout = dropTarget ? reparentMind(tree, id, dropTarget) : false
+        dropTarget = null; graph.highlight(null)
+        if (findMindParent(tree, id) === tree) { const side = dataRef.current.structure === 'left' || dataRef.current.structure === 'right' ? dataRef.current.structure : (item.x || 0) >= 0 ? 'right' : 'left'; if (side !== item.side) { setBranchSide(item, side); relayout = true } }
+        redraw(id, relayout); record()
+      },
+      viewport: updateViewport,
     })
-    graph.on('node:moved', ({ node }) => {
-      const tree = dataRef.current.nodeData, item = findMind(tree, node.id), rootCell = graph.getCellById(tree.id) as Node
-      if (!item) return
-      const box = rootCell.getBBox()
-      if (item === tree) { const { tx, ty } = graph.translate(), scale = graph.zoom(); graph.translate(tx + (box.center.x - EDITOR_WIDTH / 2) * scale, ty + (box.center.y - EDITOR_HEIGHT / 2) * scale); redraw(node.id); return }
-      walkMind(tree, current => { const cell = graph.getCellById(current.id) as Node | null; if (cell) { current.x = cell.getBBox().center.x - box.center.x; current.y = cell.getBBox().center.y - box.center.y } })
-      let relayout = dropTarget ? reparentMind(tree, node.id, dropTarget) : false; clearTarget()
-      if (findMindParent(tree, node.id) === tree) { const side = dataRef.current.structure === 'left' || dataRef.current.structure === 'right' ? dataRef.current.structure : (item.x || 0) >= 0 ? 'right' : 'left'; if (side !== item.side) { setBranchSide(item, side); relayout = true } }
-      redraw(node.id, relayout); record()
-    })
-    graph.on('scale', positionControls); graph.on('translate', positionControls)
-    const wheel = (event: WheelEvent) => {
-      if (event.ctrlKey || event.metaKey) return
-      event.preventDefault(); const factor = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? canvas.clientHeight : 1, { tx, ty } = graph.translate()
-      graph.translate(tx - (event.shiftKey ? event.deltaY : event.deltaX) * factor, ty - (event.shiftKey ? 0 : event.deltaY) * factor)
-    }
-    canvas.addEventListener('wheel', wheel, { passive: false })
-    const observer = new ResizeObserver(() => { if (canvas.clientWidth && canvas.clientHeight) { graph.resize(canvas.clientWidth, canvas.clientHeight); positionControls() } }); observer.observe(canvas)
-    return () => { observer.disconnect(); canvas.removeEventListener('wheel', wheel); graph.dispose(); graphRef.current = null }
-  }, [beginEdit, positionControls, record, redraw, select])
+    graphRef.current = graph
+    redraw(dataRef.current.nodeData.id); history.current.present = copy(dataRef.current); baseline.current = JSON.stringify(dataRef.current)
+    graph.fit(canvas.clientWidth <= 740 ? 40 : 90, canvas.clientWidth <= 740 ? .85 : .2)
+    const observer = new ResizeObserver(() => { if (canvas.clientWidth && canvas.clientHeight) graph.resize(canvas.clientWidth, canvas.clientHeight) }); observer.observe(canvas)
+    return () => { observer.disconnect(); graph.destroy(); graphRef.current = null }
+  }, [beginEdit, record, redraw, select, updateViewport])
   useEffect(() => {
-    if (editing) { editRef.current?.focus(); if (editingRef.current?.text === findMind(root(), editing.id)?.topic) editRef.current?.select() }
+    if (editing) { editRef.current?.focus({ preventScroll: true }); if (editingRef.current?.text === findMind(root(), editing.id)?.topic) editRef.current?.select() }
   }, [editing?.id, view])
   useEffect(() => { focusCanvas() }, [view, zen])
   useEffect(() => {
@@ -294,14 +291,14 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
     else if (modifier && key === 'y') { event.preventDefault(); undo(true) }
     else if (modifier && key === 'b') { event.preventDefault(); changeNode({ bold: !selected.bold }) }
     else if (modifier && event.key === '/') { event.preventDefault(); toggleFold() }
-    else if (modifier && ['=', '+', '-', '0'].includes(event.key)) { event.preventDefault(); if (key === '0') fit(); else graphRef.current?.zoom(key === '-' ? -.1 : .1, { minScale: .2, maxScale: 3 }) }
+    else if (modifier && ['=', '+', '-', '0'].includes(event.key)) { event.preventDefault(); if (key === '0') fit(); else graphRef.current?.zoom(key === '-' ? -.1 : .1) }
     else if (target.closest('button,[role="menu"]')) return
     else if (modifier && event.key === 'Enter') { event.preventDefault(); addParent() }
     else if (event.key === 'Tab') { event.preventDefault(); if (event.shiftKey) select(findMindParent(root(), selectedId)?.id || root().id, true); else add() }
     else if (event.key === 'Enter') { event.preventDefault(); add(true, event.shiftKey) }
     else if (event.key === 'F2' || event.key === ' ') { event.preventDefault(); beginEdit(selectedId) }
     else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); remove(modifier) }
-    else if (event.key === 'Home') { event.preventDefault(); select(root().id); graphRef.current?.centerCell(graphRef.current.getCellById(root().id)) }
+    else if (event.key === 'Home') { event.preventDefault(); select(root().id); graphRef.current?.center(root().id) }
     else if (event.key.startsWith('Arrow')) {
       event.preventDefault()
       if (event.altKey && (key === 'arrowup' || key === 'arrowdown')) { if (reorderMind(root(), selectedId, key === 'arrowup' ? -1 : 1)) { redraw(); record() }; return }
@@ -319,7 +316,7 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
       }
     } else if (!modifier && !event.altKey && event.key.length === 1) { event.preventDefault(); beginEdit(selectedId, event.key) }
   }
-  const editTextarea = (outline = false) => editing && <textarea ref={editRef} className={`sk-mind-text-editor ${outline ? 'is-outline' : ''}`} aria-label={t('ui.editText')} style={outline ? undefined : { left: editing.left, top: editing.top, width: editing.width, height: editing.height, fontSize: (findMind(root(), editing.id)?.fontSize || (editing.id === root().id ? 24 : 16)) * zoom / 100 }} value={editing.text} onChange={event => updateEditing({ ...editing, text: event.target.value })} onBlur={() => finishEdit()} onKeyDown={event => {
+  const editTextarea = (outline = false) => editing && <textarea ref={editRef} className={`sk-mind-text-editor ${outline ? 'is-outline' : ''}`} aria-label={t('ui.editText')} style={outline ? undefined : { left: editing.left, top: editing.top, width: editing.width, height: editing.height, fontSize: (findMind(root(), editing.id)?.fontSize || (editing.id === root().id ? 18 : 16)) * zoom / 100 }} value={editing.text} onChange={event => updateEditing({ ...editing, text: event.target.value })} onBlur={() => finishEdit()} onKeyDown={event => {
     event.stopPropagation(); if (event.nativeEvent.isComposing) return
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void save() }
     else if (event.key === 'Escape') { event.preventDefault(); finishEdit(true); focusCanvas() }
@@ -363,15 +360,17 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
     <div className="sk-mind-workarea">
       <div className="sk-mind-stage">
         <div className={`sk-mind-editor-shell ${view === 'outline' ? 'is-hidden' : ''} ${dataRef.current.background === 'dots' ? 'has-dots' : ''}`}>
-          <div ref={canvasRef} className="sk-mind-x6-canvas" tabIndex={0} role="application" aria-label={t('mindmap.canvas')} onMouseDown={focusCanvas} onCompositionStart={() => { if (!editingRef.current) beginEdit(selectionRef.current, '') }} />
-          {!editing && zoom >= 85 && <button className="sk-mind-node-add" style={quick} title={`${t('ui.addChild')} · Tab`} aria-label={t('mindmap.quickAdd')} onClick={() => add()}><Plus size={14} /></button>}
-          {!editing && zoom >= 85 && folds.map(point => <button key={point.id} className={`sk-mind-node-fold ${point.collapsed ? 'is-collapsed' : ''} ${point.id === selectedId ? 'is-selected' : ''}`} style={{ left: point.left, top: point.top }} aria-label={`${t(point.collapsed ? 'mindmap.expand' : 'mindmap.collapse')}: ${findMind(root(), point.id)?.topic}`} onClick={() => toggleFold(point.id)}>{point.collapsed ? point.count : <Minus size={12} />}</button>)}
+          <div ref={canvasRef} className="sk-mind-leafer-canvas" tabIndex={0} role="application" aria-label={t('mindmap.canvas')} onMouseDown={focusCanvas} onCompositionStart={() => { if (!editingRef.current) beginEdit(selectionRef.current, '') }} />
+          <div ref={controlsRef} className="sk-mind-controls" onPointerDown={event => event.stopPropagation()} onMouseDown={event => { event.preventDefault(); event.stopPropagation() }}>
+          {!editing && <button className="sk-mind-node-add" style={controlStyle(quick)} title={`${t('ui.addChild')} · Tab`} aria-label={t('mindmap.quickAdd')} onClick={() => add()}><Plus size={14} /></button>}
+          {!editing && folds.filter(point => zoom >= 85 || point.id === selectedId).map(point => <button key={point.id} className={`sk-mind-node-fold ${point.collapsed ? 'is-collapsed' : ''} ${point.id === selectedId ? 'is-selected' : ''}`} style={controlStyle(point)} aria-label={`${t(point.collapsed ? 'mindmap.expand' : 'mindmap.collapse')}: ${nodeById.get(point.id)?.topic}`} onClick={() => toggleFold(point.id)}>{point.collapsed ? point.count : <Minus size={12} />}</button>)}
+          </div>
           {view === 'map' && editTextarea()}
         </div>
         {view === 'outline' && <div className="sk-mind-outline" tabIndex={0} role="tree" aria-label={t('mindmap.outline')}><div className="sk-mind-outline-title"><ListTree size={17} />{t('mindmap.outline')}</div>{outlineNode(root())}</div>}
         {search !== null && <div className="sk-mind-search"><Search size={16} /><input ref={searchRef} aria-label={t('mindmap.find')} placeholder={t('mindmap.findPlaceholder')} value={search} onChange={event => { setSearch(event.target.value); setMatchIndex(-1) }} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); goToMatch(matchIndex + (event.shiftKey ? -1 : 1)) } }} /><span>{matches.length ? `${Math.max(0, matchIndex + 1)}/${matches.length}` : search ? t('mindmap.noResults') : ''}</span><Tool label={t('mindmap.previousResult')} disabled={!matches.length} onClick={() => goToMatch(matchIndex - 1)}><ChevronLeft size={16} /></Tool><Tool label={t('mindmap.nextResult')} disabled={!matches.length} onClick={() => goToMatch(matchIndex + 1)}><ChevronRight size={16} /></Tool><Tool label={t('mindmap.closeSearch')} onClick={() => { setSearch(null); focusCanvas() }}><X size={16} /></Tool></div>}
         {zen && <button className="sk-mind-exit-zen" onClick={() => setZen(false)}><Focus size={16} />{t('mindmap.exitZen')}<kbd>Esc</kbd></button>}
-        {view === 'map' && <div className="sk-mind-navigation"><Tool label={t('mindmap.root')} onClick={() => { select(root().id); graphRef.current?.centerCell(graphRef.current.getCellById(root().id)) }}><Focus size={17} /></Tool><i /><Tool label={t('ui.zoomOut')} disabled={zoom <= 20} onClick={() => graphRef.current?.zoom(-.1, { minScale: .2, maxScale: 3 })}><Minus size={17} /></Tool><button className="sk-mind-zoom-value" title={t('mindmap.actualSize')} onClick={() => graphRef.current?.zoomTo(1)}>{zoom}%</button><Tool label={t('ui.zoomIn')} disabled={zoom >= 300} onClick={() => graphRef.current?.zoom(.1, { minScale: .2, maxScale: 3 })}><Plus size={17} /></Tool><i /><Tool label={t('ui.fitCanvas')} onClick={fit}><Maximize2 size={16} /></Tool></div>}
+        {view === 'map' && <div className="sk-mind-navigation"><Tool label={t('mindmap.root')} onClick={() => { select(root().id); graphRef.current?.center(root().id) }}><Focus size={17} /></Tool><i /><Tool label={t('ui.zoomOut')} disabled={zoom <= 20} onClick={() => graphRef.current?.zoom(-.1)}><Minus size={17} /></Tool><button className="sk-mind-zoom-value" title={t('mindmap.actualSize')} onClick={() => graphRef.current?.zoomTo(1)}>{zoom}%</button><Tool label={t('ui.zoomIn')} disabled={zoom >= 300} onClick={() => graphRef.current?.zoom(.1)}><Plus size={17} /></Tool><i /><Tool label={t('ui.fitCanvas')} onClick={fit}><Maximize2 size={16} /></Tool></div>}
       </div>
       <aside className={`sk-mind-inspector ${panel && !zen ? 'is-open' : ''}`} aria-label={t('mindmap.format')} inert={!panel || zen}>
         <div className="sk-mind-inspector-tabs" role="tablist" aria-label={t('mindmap.format')}><button role="tab" id="sk-mind-topic-tab" aria-controls="sk-mind-topic-panel" aria-selected={panel === 'topic'} onClick={() => setPanel('topic')}>{t('mindmap.style')}</button><button role="tab" id="sk-mind-map-tab" aria-controls="sk-mind-map-panel" aria-selected={panel === 'map'} onClick={() => setPanel('map')}>{t('mindmap.map')}</button><Tool label={t('mindmap.closePanel')} onClick={() => setPanel(null)}><X size={15} /></Tool></div>
@@ -380,7 +379,7 @@ export function MindMapWorkspace({ data, close, commit }: { data: MindMapData; c
             <div className="sk-mind-selection-info"><small>{t('mindmap.selectedTopic')}</small><strong title={selected.topic}>{selected.topic}</strong></div>
             <section><h3>{t('ui.nodeStyle')}</h3><div className="sk-mind-shapes">{styles.map((style, i) => <button key={style} aria-pressed={(selected.style || '') === style} onClick={() => changeNode({ style: style || undefined })}><span className={`sk-mind-shape-sample is-${style || 'auto'}`} style={{ '--branch': selected.color || theme.colors[0] } as CSSProperties}>{style ? 'Aa' : <Network size={22} />}</span><span>{t(styleKeys[i])}</span></button>)}</div></section>
             <section><h3>{t('mindmap.branchColor')}</h3><div className="sk-mind-swatches">{[...theme.colors, '#343b48', '#e2a848', '#c778b1'].map((color, i) => <button key={`${color}-${i}`} className="sk-mind-swatch" style={{ background: color }} title={color} aria-label={t('mindmap.color', { color })} aria-pressed={selected.color === color} onClick={() => changeNode({ color })}>{selected.color === color && <Check size={14} />}</button>)}<label className="sk-mind-custom-color" title={t('mindmap.customColor')}><Plus size={15} /><input type="color" aria-label={t('mindmap.customColor')} value={selected.color || theme.colors[0]} onChange={event => changeNode({ color: event.target.value })} /></label></div><button className="sk-mind-text-button" onClick={() => changeNode({ color: undefined })}>{t('mindmap.resetColor')}</button></section>
-            <section><h3>{t('mindmap.text')}</h3><div className="sk-mind-text-controls"><label><span>{t('mindmap.fontSize')}</span><select aria-label={t('mindmap.fontSize')} value={selected.fontSize || (selected === root() ? 24 : 16)} onChange={event => changeNode({ fontSize: Number(event.target.value) })}>{[12, 14, 16, 18, 20, 24, 28, 32, 36].map(size => <option key={size} value={size}>{size}</option>)}</select></label><Tool label={t('ui.bold')} active={selected.bold === true} onClick={() => changeNode({ bold: !selected.bold })}><Bold size={17} /></Tool></div></section>
+            <section><h3>{t('mindmap.text')}</h3><div className="sk-mind-text-controls"><label><span>{t('mindmap.fontSize')}</span><select aria-label={t('mindmap.fontSize')} value={selected.fontSize || (selected === root() ? 18 : 16)} onChange={event => changeNode({ fontSize: Number(event.target.value) })}>{[12, 14, 16, 18, 20, 24, 28, 32, 36].map(size => <option key={size} value={size}>{size}</option>)}</select></label><Tool label={t('ui.bold')} active={selected.bold === true} onClick={() => changeNode({ bold: !selected.bold })}><Bold size={17} /></Tool></div></section>
             <label className="sk-mind-subtree"><input type="checkbox" checked={subtreeStyle} onChange={event => setSubtreeStyle(event.target.checked)} />{t('mindmap.subtreeStyle')}</label>
             <div className="sk-mind-topic-actions"><button onClick={() => beginEdit(selectedId)}><Pencil size={15} />{t('ui.editText')}<kbd>F2</kbd></button><button className="is-danger" disabled={selected === root()} onClick={() => remove()}><Trash2 size={15} />{t('ui.deleteNode')}<kbd>⌫</kbd></button></div>
           </> : <>
