@@ -9,6 +9,7 @@ import { DOMEditor } from 'slate-dom'
 import { useReadOnly, useSlateStatic } from 'slate-react'
 import { Sigma, AlignCenter, AlignLeft, AlignRight, ArrowDownCircle, ArrowUpCircle, ChevronRight, Copy, FileText, GripVertical, Image as ImageIcon, List, ListOrdered, Network, Pilcrow, Plus, Quote, SquareCode, Table2, Trash2 } from 'lucide-react'
 import { createId } from '../data'
+import { createDiagramDraft } from '../diagramDraft'
 import { createTable as createTableModel } from '../table'
 import { getBlockDropDestination } from '../editor'
 import { useBlockSelection } from '../blockSelection'
@@ -117,7 +118,7 @@ export function BlockFrame({ element, children, attributes }: { element: RichEle
     input.click()
   }
   const createTable = (rows = 3, columns = 3): RichElement => createTableModel(rows, columns, createId, true)
-  const createDiagram = (type: 'flowchart' | 'mindmap'): RichElement => type === 'mindmap' ? ({ type, id: createId(), mindData: { direction: 2, nodeData: { id: createId(), topic: t("ui.centralTopic"), expanded: true, children: [{ id: createId(), topic: t("ui.branchOne") }, { id: createId(), topic: t("ui.branchTwo") }] } }, width: 680, children: [{ text: '' }] }) : ({ type, id: createId(), nodes: [{ id: 'start', label: t("ui.start"), shape: 'terminator', x: 70, y: 110 }, { id: 'process', label: t("ui.process"), shape: 'process', x: 285, y: 110 }, { id: 'done', label: t("ui.done"), shape: 'terminator', x: 500, y: 110 }], edges: [{ id: 'a-b', source: 'start', target: 'process' }, { id: 'b-c', source: 'process', target: 'done' }], width: 680, children: [{ text: '' }] })
+  const createDiagram = (type: 'flowchart' | 'mindmap') => createDiagramDraft(editor, type, t('ui.centralTopic'))
   const duplicate = () => { const [clone] = cloneBlocksWithFreshIds([element], createId); const current = topPath(); Transforms.insertNodes(editor, clone, { at: current.slice(0, -1).concat(current[current.length - 1] + 1) }); setOpen(false) }
   const align = (value: 'left' | 'center' | 'right') => update({ align: value })
   const isText = TEXT_TYPES.has(element.type)

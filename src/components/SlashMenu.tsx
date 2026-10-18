@@ -6,9 +6,10 @@ import { DOMEditor } from 'slate-dom'
 import { useSlate } from 'slate-react'
 import { ChevronRight } from 'lucide-react'
 import { createId } from '../data'
+import { createDiagramDraft } from '../diagramDraft'
 import { createTable } from '../table'
 import { emptyText, insertBlock, toggleBlock } from '../editor'
-import type { BlockType, DiagramElement, RichElement } from '../types'
+import type { BlockType, RichElement } from '../types'
 import { TablePickerPopover } from './TablePickerPopover'
 import { useResourceRuntime } from '../resources'
 import { useEditorI18n } from '../i18n'
@@ -37,7 +38,7 @@ export function SlashMenu() {
     const start = Editor.before(editor, editor.selection.anchor, { distance: query.length + 1, unit: 'character' })
     if (start) Transforms.delete(editor, { at: { anchor: start, focus: editor.selection.anchor } })
   }
-  const diagram = (type: 'flowchart' | 'mindmap'): DiagramElement => type === 'mindmap' ? ({ type, id: createId(), mindData: { direction: 2, nodeData: { id: createId(), topic: t("ui.centralTopic"), expanded: true, children: [{ id: createId(), topic: t("ui.branchOne") }, { id: createId(), topic: t("ui.branchTwo") }] } }, children: emptyText() }) : ({ type, id: createId(), nodes: [{ id: 'a', label: t("ui.start"), x: 30, y: 60 }, { id: 'b', label: t("ui.process"), x: 240, y: 60 }, { id: 'c', label: t("ui.done"), x: 450, y: 60 }], edges: [{ id: 'ab', source: 'a', target: 'b' }, { id: 'bc', source: 'b', target: 'c' }], children: emptyText() })
+  const diagram = (type: 'flowchart' | 'mindmap') => createDiagramDraft(editor, type, t('ui.centralTopic'))
   const commands: Command[] = [
     { title: t('paragraph'), hint: t('paragraphHint'), kind: 'paragraph', keywords: 'text paragraph 正文', run: () => selectBlock('paragraph') },
     { title: t('heading1'), hint: t('heading1Hint'), kind: 'heading-one', keywords: 'h1 标题', run: () => selectBlock('heading-one') },

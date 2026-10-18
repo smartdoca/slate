@@ -215,13 +215,11 @@
 /* Mind Elixir is a standalone mind-map surface rather than the X6 flow editor. */
 .sk-mind-dialog { max-width: 1320px; }
 .sk-mind-editor-shell { position: relative; height: calc(100% - 106px); overflow: hidden; }
-.sk-mind-x6-canvas { width: 100%; height: 100%; overflow: hidden; outline: 0; background: #f8faff; }
+.sk-mind-leafer-canvas { width: 100%; height: 100%; overflow: hidden; outline: 0; background: #f8faff; }
 .sk-mind-dialog { display: flex; flex-direction: column; }
 .sk-mind-dialog > header { flex-shrink: 0; }
 .sk-mind-dialog .sk-mind-editor-shell { flex: 1; min-height: 0; }
 .sk-mind-dialog .sk-mind-toolbar { height: auto; min-height: 44px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; flex-shrink: 0; }
-.sk-mind-drop-target [magnet] { stroke: #3370ff; stroke-width: 4px; }
-.sk-mind-drop-target { filter: drop-shadow(0 0 7px #3370ff88); }
 /* Selection is visual only: clicks and drags must reach the underlying node. */
 .sk-mind-dialog .x6-widget-selection-box { pointer-events: none; border: 1px solid #7c9cdb; border-radius: 10px; box-shadow: 0 0 0 3px #3370ff12; }
 .sk-mind-text-editor { position: absolute; z-index: 25; box-sizing: border-box; resize: none; padding: 10px; border: 2px solid #3370ff; border-radius: 8px; background: #fff; color: #303442; font-family: inherit; font-size: 16px; line-height: 1.4; text-align: center; outline: none; box-shadow: 0 6px 22px #24497b22; }
@@ -783,11 +781,11 @@
 
 /* Mind map workspace: quiet chrome, a content-first canvas and contextual formatting. */
 .sk-diagram-modal:has(> .sk-mind-dialog) { padding: 0; background: #faf9f6; backdrop-filter: none; }
-.sk-diagram-dialog.sk-mind-dialog { --mind-accent: #df7864; --mind-ink: #363b45; --mind-muted: #777c85; --mind-border: #e8e8e9; width: 100vw; height: 100dvh; max-width: none; max-height: none; border-radius: 0; box-shadow: none; background: #fff; color: var(--mind-ink); font: 13px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; animation: sk-mind-enter .18s ease-out; }
+.sk-diagram-dialog.sk-mind-dialog { --mind-accent: #3370ff; --mind-ink: #363b45; --mind-muted: #777c85; --mind-border: #e8e8e9; width: 100vw; height: 100dvh; max-width: none; max-height: none; border-radius: 0; box-shadow: none; background: #fff; color: var(--mind-ink); font: 13px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; animation: sk-mind-enter .18s ease-out; }
 .sk-mind-dialog *, .sk-mind-dialog *::before, .sk-mind-dialog *::after { box-sizing: border-box; }
 .sk-mind-dialog button, .sk-mind-dialog input, .sk-mind-dialog select, .sk-mind-dialog textarea { font: inherit; }
 .sk-mind-dialog button { cursor: pointer; transition: color .12s, background-color .12s, border-color .12s, box-shadow .12s, transform .12s; }
-.sk-mind-dialog button:active:not(:disabled) { transform: translateY(1px); }
+.sk-mind-dialog button:active:not(:disabled):not(.sk-mind-node-add):not(.sk-mind-node-fold) { transform: translateY(1px); }
 .sk-mind-dialog button:disabled { opacity: .35; cursor: default; }
 .sk-mind-dialog :is(button, input, select):focus-visible { outline: 2px solid var(--mind-accent); outline-offset: 3px; }
 .sk-mind-dialog :is(button, input, select):focus:not(:focus-visible) { outline: none; }
@@ -817,17 +815,13 @@
 .sk-mind-stage { min-width: 0; flex: 1; position: relative; background: #faf9f6; }
 .sk-mind-dialog .sk-mind-editor-shell { position: absolute; inset: 0; height: 100%; overflow: hidden; }
 .sk-mind-dialog .sk-mind-editor-shell.is-hidden { visibility: hidden; pointer-events: none; }
-.sk-mind-dialog .sk-mind-x6-canvas { background: transparent; height: 100%; width: 100%; }
+.sk-mind-dialog .sk-mind-leafer-canvas { background: transparent; height: 100%; width: 100%; }
 .sk-mind-dialog .has-dots { background-image: radial-gradient(#b7b4ad 1px, transparent 1px); background-size: 20px 20px; }
-.sk-mind-dialog .x6-widget-selection-box { border: 1.5px solid #7c9bdd; border-radius: 10px; box-shadow: 0 0 0 3px #7c9bdd18; }
-.sk-mind-dialog .x6-node { cursor: default; }
 .sk-mind-dialog .sk-mind-node-add { width: 23px; height: 23px; color: #8593a7; border: 1px solid #d4dbe5; box-shadow: none; background: #fff; }
 .sk-mind-dialog .sk-mind-node-add:hover { color: #fff; background: #7c9bdd; border-color: #7c9bdd; box-shadow: 0 2px 7px #7c9bdd33; }
-.sk-mind-dialog .sk-mind-node-add:active { transform: translate(-50%, -50%) scale(.94); }
 .sk-mind-node-fold { position: absolute; z-index: 17; transform: translate(-50%, -50%); display: grid; place-items: center; width: 19px; height: 19px; padding: 0; background: #faf9f6; border: 1px solid #d5d8dd; border-radius: 50%; color: #818793; font-size: 10px !important; opacity: 0; }
 .sk-mind-editor-shell:hover .sk-mind-node-fold, .sk-mind-node-fold.is-selected, .sk-mind-node-fold.is-collapsed, .sk-mind-node-fold:focus-visible { opacity: 1; }
 .sk-mind-node-fold:hover { background: #edf1f8; color: #4d6a9a; border-color: #7c9bdd; }
-.sk-mind-dialog .sk-mind-node-fold:active { transform: translate(-50%, -50%) scale(.94); }
 .sk-mind-dialog .sk-mind-text-editor { min-width: 80px; min-height: 42px; border: 1.5px solid #7c9bdd; border-radius: 9px; padding: 8px 12px; color: #343b48; background: #fff; box-shadow: 0 2px 12px #343b4810; line-height: 1.45; }
 .sk-mind-navigation { position: absolute; z-index: 20; bottom: 24px; right: 24px; display: flex; gap: 1px; align-items: center; padding: 4px; border: 1px solid #e7e6e3; border-radius: 9px; background: #fffffff5; box-shadow: 0 3px 12px #343b4808; }
 .sk-mind-navigation .sk-mind-tool { width: 31px; height: 30px; min-width: 31px; padding: 0; }
@@ -981,3 +975,22 @@
   .sk-mind-outline { padding: 25px 12px 75px; }
 }
 @media (prefers-reduced-motion: reduce) { .sk-mind-dialog, .sk-mind-dialog * { animation: none !important; transition: none !important; } }
+
+/* Leafer keeps viewport transforms off the React render path. */
+.sk-mind-controls { position: absolute; inset: 0; pointer-events: none; transform-origin: 0 0; }
+.sk-mind-controls button { pointer-events: auto; transition: color .12s, background-color .12s, border-color .12s, box-shadow .12s; }
+/* Keep control size and spacing in screen pixels at every zoom, with a fixed hit area. */
+.sk-mind-controls button > svg { pointer-events: none; transition: transform .12s ease; }
+.sk-mind-controls button:active:not(:disabled) > svg { transform: scale(.9); }
+.sk-mind-dialog .sk-mind-controls :is(.sk-mind-node-add, .sk-mind-node-fold) { transform-origin: 0 0; transform: scale(var(--mind-inverse-scale, 1)) translate(calc(-50% + var(--mind-control-offset, 0px)), -50%); }
+.sk-mind-leafer-canvas[data-dragging=true] + .sk-mind-controls { visibility: hidden; }
+.sk-mind-stage { background: #f8f9fb; }
+.sk-mind-app-icon { background: #eaf1ff; color: #3370ff; }
+.sk-mind-dialog .sk-mind-header-actions > button.is-primary, .sk-mind-dialog .is-primary { border-color: #3370ff; background: #3370ff; }
+.sk-mind-dialog .is-primary:hover { background: #2860e1; }
+.sk-mind-dialog .sk-mind-tool.is-active { color: #3370ff; background: #eaf1ff; }
+.sk-mind-inspector-tabs > button[aria-selected=true] { border-bottom-color: #3370ff; }
+.sk-mind-structures button[aria-pressed=true] .sk-mind-structure-preview,
+.sk-mind-themes button[aria-pressed=true] .sk-mind-theme-preview,
+.sk-mind-shapes > button[aria-pressed=true] .sk-mind-shape-sample { border-color: #3370ff; background: #f0f5ff; box-shadow: 0 0 0 1px #3370ff20; }
+.sk-mind-themes button[aria-pressed=true] > span:last-child { color: #3370ff; }
