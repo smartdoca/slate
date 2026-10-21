@@ -1,3 +1,4 @@
+import { useMediaPreview } from '../mediaPreview'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { ColumnBlock, ColumnsBlock } from './ColumnsBlock'
 import { Element, Node, Transforms } from 'slate'
@@ -136,6 +137,7 @@ function ImageBlock({ element }: { element: ImageElement }) {
   const runtime = useResourceRuntime(); const { t } = useEditorI18n(); const upload = runtime.stateFor(element.id)
   const resource = { kind: 'image' as const, path: element.path || '', name: element.alt }
   const resolved = useResolvedResource(resource); const src = upload?.previewUrl || resolved
+  const preview = useMediaPreview(element, { src, width: element.width }, () => setViewing(true))
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
   const replacement = useRef<HTMLInputElement>(null)
   const previewOnClick = useRef(false)
@@ -155,11 +157,11 @@ function ImageBlock({ element }: { element: ImageElement }) {
     Transforms.select(editor, DOMEditor.findPath(editor, element)); DOMEditor.focus(editor)
   }
   return <><figure contentEditable={false} className={`sk-image is-style-${element.displayStyle || 'rounded'} ${selected ? 'is-selected' : ''}`} style={{ width: element.width || 640, marginLeft: element.align === 'right' || element.align === 'center' ? 'auto' : 0, marginRight: element.align === 'center' ? 'auto' : 0 }} onMouseDown={selectImage}>
-    {src && <img src={src} onError={() => setFailedSrc(src)} onLoad={event => { setFailedSrc(null); if (!event.currentTarget.naturalWidth || !event.currentTarget.naturalHeight) event.currentTarget.style.aspectRatio = '16 / 9' }} alt={element.alt || ''} title={t(readOnly ? 'media.clickToPreview' : 'media.clickSelectedImageToPreview')} tabIndex={0} onClick={event => { if (shouldOpenMediaPreview(readOnly, previewOnClick.current, event)) setViewing(true) }} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); setViewing(true) } }} onContextMenu={event => { event.preventDefault(); setDownloadMenu({ x: event.clientX, y: event.clientY }) }} />}
+    {src && <img src={src} onError={() => setFailedSrc(src)} onLoad={event => { setFailedSrc(null); if (!event.currentTarget.naturalWidth || !event.currentTarget.naturalHeight) event.currentTarget.style.aspectRatio = '16 / 9' }} alt={element.alt || ''} title={t(readOnly ? 'media.clickToPreview' : 'media.clickSelectedImageToPreview')} tabIndex={0} onClick={event => { if (shouldOpenMediaPreview(readOnly, previewOnClick.current, event)) preview() }} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); preview() } }} onContextMenu={event => { event.preventDefault(); setDownloadMenu({ x: event.clientX, y: event.clientY }) }} />}
     {upload?.status === 'uploading' && <div className="sk-upload-overlay"><span>{t('uploading')} {Math.round(upload.progress * 100)}%</span><progress max={1} value={upload.progress} /></div>}
     {(upload?.status === 'error' || !src || failedSrc === src) && upload?.status !== 'uploading' && <div className="sk-resource-failure" role="status" onMouseDown={e => e.stopPropagation()}><span>{upload?.status === 'error' ? t('uploadFailed') : t('resource.imageUnavailable')}</span>{!readOnly && <div>{upload?.status === 'error' && <button type="button" onClick={() => void runtime.retry(element.id!)}>{t('resource.retryUpload')}</button>}<button type="button" onClick={() => replacement.current?.click()}>{t('resource.replaceImage')}</button><button type="button" onClick={() => { runtime.cancel(element.id!); Transforms.removeNodes(editor, { at: DOMEditor.findPath(editor, element) }) }}>{t('resource.removePlaceholder')}</button><input ref={replacement} hidden type="file" accept={IMAGE_FILE_ACCEPT} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) void runtime.retry(element.id!, file) }} /></div>}</div>}
     {element.showCaption && <ImageCaption element={element} />}
-    {!!src && <button className="sk-media-preview-button" aria-label={t('preview')} title={t('preview')} onMouseDown={event => event.stopPropagation()} onClick={() => setViewing(true)}><Maximize2 size={16} /></button>}
+    {!!src && <button className="sk-media-preview-button" aria-label={t('preview')} title={t('preview')} onMouseDown={event => event.stopPropagation()} onClick={() => preview()}><Maximize2 size={16} /></button>}
     {!readOnly && <button className="sk-image-resizer" aria-label={t("ui.resizeImageProportionally")} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setResizing(false)} />}
   </figure>{downloadMenu && src && <MediaDownloadMenu src={src} downloadName={element.alt || t("ui.image")} position={downloadMenu} close={() => setDownloadMenu(null)} />}{viewing && src && <MediaLightbox src={src} alt={element.alt || t("ui.image")} downloadName={element.alt || t("ui.image")} close={() => setViewing(false)} />}</>
 }

@@ -20,6 +20,24 @@ function presencePair() {
 }
 
 describe('public comments and per-session presence', () => {
+  it('renders an unnamed remote caret independently of its optional name label', async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
+    const host = document.createElement('div'), root = createRoot(host), changes = vi.fn()
+    const range = { anchor: { path: [0, 0], offset: 2 }, focus: { path: [0, 0], offset: 2 } }
+    const collaboration: CollaborationAdapter = { onLocalChange: changes, presence: {
+      sessionId: 'local', capture: () => null, resolve: (_editor, selection) => selection as Range, publish: vi.fn(),
+      subscribe: listener => { listener([{ sessionId: 'remote', userId: 'user-id', name: '', color: '#f00', selection: range }]) },
+    } }
+    try {
+      await act(async () => root.render(createElement(RichTextEditor, { initialValue: [{ id: 'p', type: 'paragraph', children: [{ text: 'hello' }] }], collaboration })))
+      const caret = host.querySelector('[data-session-id="remote"]')!
+      expect(caret.classList.contains('is-caret')).toBe(true)
+      expect(caret.getAttribute('data-name')).toBeNull()
+      expect(caret.getAttribute('style')).toContain('#f00')
+      expect(changes).not.toHaveBeenCalled()
+    } finally { await act(async () => root.unmount()) }
+  })
+
   it('shows same-account pages by session, and readonly neither draws nor publishes an editing selection', async () => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true }); vi.useFakeTimers()
     const bus = presencePair(); const a = createRef<RichTextEditorHandle>(); const b = createRef<RichTextEditorHandle>()

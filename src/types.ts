@@ -56,6 +56,31 @@ type DiagramPresentation = { width?: number; aspectRatio?: number; previewSvg?: 
 export type FlowchartElement = BaseBlock & DiagramPresentation & { type: 'flowchart'; nodes: DiagramNode[]; edges: DiagramEdge[]; canvasSettings?: Partial<DiagramCanvasSettings> }
 export type MindMapElement = BaseBlock & DiagramPresentation & { type: 'mindmap'; mindData: MindMapData }
 export type DiagramElement = FlowchartElement | MindMapElement
+/** A view snapshot, scoped to one document. IDs are native block IDs, not URLs. */
+export interface MediaPreviewItem {
+  id: string
+  type: 'image' | 'flowchart' | 'mindmap'
+  name: string
+  alt: string
+  /** Stable image resource path. Absent for generated diagram projections. */
+  path?: string
+  caption?: string
+  /** Image display width or diagram content dimensions, when available. */
+  width?: number
+  height?: number
+  /** Already rendered URL, when available. Never persist resolved URLs. */
+  src?: string
+  /** Images use resources.resolveUrl; diagrams return a view-only SVG data URL.
+   * Rejections are preview failures. This never writes to the document. */
+  resolveUrl(): Promise<string>
+}
+export interface MediaPreviewEvent {
+  currentId: string
+  index: number
+  /** Document order, including media nested in columns/tables/cards.
+   * Incomplete uploads are excluded. The array is a snapshot at the click. */
+  items: readonly MediaPreviewItem[]
+}
 export type LinkElement = BaseBlock & { type: 'link'; url: string }
 export type RichElement = ParagraphElement | CodeElement | FormulaElement | DividerElement | ImageElement | VideoElement | AttachmentElement | CardElement | TableElement | TableRowElement | TableCellElement | ColumnsElement | ColumnElement | DiagramElement | LinkElement | CustomElement
 export type RichNode = RichElement | RichText
@@ -253,6 +278,9 @@ export interface RichTextEditorProps {
   /** Host-owned preview for a completed attachment. Receives its stable path and metadata.
    * Edit mode: select first, click again to preview. Readonly: preview on first click. */
   onAttachmentPreview?: (attachment: AttachmentElement) => void
+  /** Optional host lightbox for images, flowcharts and mind maps. Edit mode
+   * selects first; readonly previews immediately. Omit for the built-in preview. */
+  onMediaPreview?: (event: MediaPreviewEvent) => void
   comments?: EditorComments
   formulaRenderer?: import('./formula').FormulaRenderer
   /** Interface language. `zh` and omitted both show Chinese. Any other code shows English. */

@@ -1,4 +1,4 @@
-import { Editor, Element, Node, Range, Text, Transforms, type Path, type Point } from 'slate'
+import { Editor, Element, Node, Path, Range, Text, Transforms, type Point } from 'slate'
 import { createId } from './data'
 import { assertUniqueIds, collectIds, projectingEditors } from './ids'
 import { cloneBlocksWithFreshIds } from './clipboard'
@@ -395,9 +395,15 @@ export const withRichBlocks = (editor: RichEditor, options: { firstLineTitle?: (
     const childIndex = containerPath && editor.selection ? editor.selection.anchor.path[containerPath.length] : 0
     const containerCount = containerPath ? (Node.get(editor, containerPath) as RichElement).children.length : 0
     const topCount = editor.children.length
+    const sourceParagraph = editor.selection && Editor.above(editor, { at: editor.selection, match: paragraphMatch })
+    const fromHeading = sourceParagraph && (sourceParagraph[0] as ParagraphElement).title
     const fromTitle = !container && options.firstLineTitle?.() && editor.selection && Range.isCollapsed(editor.selection) && editor.selection.anchor.path[0] === 0
     Editor.withoutNormalizing(editor, () => {
       insertBreak()
+      if (fromHeading && editor.selection) {
+        const nextParagraph = Editor.above(editor, { at: editor.selection, match: paragraphMatch })
+        if (nextParagraph && !Path.equals(nextParagraph[1], sourceParagraph![1])) Transforms.unsetNodes(editor, 'title', { at: nextParagraph[1] })
+      }
       if (fromTitle && editor.selection && editor.selection.anchor.path[0] > 0) {
         const at = [editor.selection.anchor.path[0]]
         Transforms.setNodes(editor, { type: 'paragraph' }, { at })
