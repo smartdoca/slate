@@ -1,3 +1,4 @@
+import { useMediaPreview } from '../mediaPreview'
 import { EMPTY_DIAGRAM_PREVIEW } from '../diagramDraft'
 import { useDiagramDraft } from './useDiagramDraft'
 import { useEditorI18n, translate, zhCN } from '../i18n'
@@ -916,6 +917,49 @@ function X6Editor({ element, close, commit }: { element: FlowchartElement; close
   </DiagramWorkspace>
 }
 
+/** Builds the same view projection used by the block, without a Slate operation. */
+export async function createFlowchartPreview(element: FlowchartElement, signal?: AbortSignal): Promise<{ svg: string; size: { width: number; height: number } }> {
+  if (signal?.aborted) throw new DOMException('Preview cancelled', 'AbortError')
+  if (element.previewSvg && element.previewVersion === FLOW_PREVIEW_VERSION) return { svg: withoutEditorControls(element.previewSvg), size: { width: element.contentWidth || 680, height: element.contentHeight || 300 } }
+  if (!element.nodes.length && !element.edges.length) return { svg: EMPTY_DIAGRAM_PREVIEW, size: { width: 680, height: 300 } }
+  const container = document.createElement('div')
+  container.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:1200px;height:800px'
+  document.body.appendChild(container)
+  let graph: Graph | undefined
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  let fallback: ReturnType<typeof setTimeout> | undefined
+  let abort: (() => void) | undefined
+  let disposed = false
+  try {
+    const canvas = graph = new Graph({ container, width: 1200, height: 800, async: true, magnetThreshold: 2, background: { color: '#fff' }, grid: { visible: true, type: 'mesh', size: 16, args: { color: '#d9e2f2', thickness: 1 } } })
+    canvas.use(new Export())
+    return await new Promise((resolve, reject) => {
+      let ready = false, exported = false
+      abort = () => reject(new DOMException('Preview cancelled', 'AbortError'))
+      signal?.addEventListener('abort', abort, { once: true })
+      timeout = setTimeout(() => reject(new Error('Diagram preview unavailable')), 5000)
+      const exportPreview = () => {
+        if (!ready || exported || disposed || canvas.getCells().some(cell => !canvas.findViewByCell(cell))) return
+        exported = true
+        const box = canvas.getContentBBox().inflate(28)
+        canvas.toSVG(svg => {
+          if (!disposed) resolve({ svg: withoutEditorControls(svg, element.edges.map(edge => edge.id)), size: { width: Math.max(1, Math.round(box.width)), height: Math.max(1, Math.round(box.height)) } })
+        }, { viewBox: box, preserveDimensions: { width: box.width, height: box.height }, copyStyles: false, serializeImages: true })
+      }
+      canvas.on('render:done', () => requestAnimationFrame(() => requestAnimationFrame(exportPreview)))
+      ready = true
+      canvas.fromJSON({ nodes: element.nodes.map(node => makeNode(node.shape || 'process', node.x, node.y, node)), edges: element.edges.map(edge => makeEdge(edge)) })
+      canvas.getEdges().forEach(edge => applyEdgeGeometry(edge, edge.getData<EdgeData>()))
+      fallback = setTimeout(exportPreview, 300)
+    })
+  } finally {
+    disposed = true
+    clearTimeout(timeout); clearTimeout(fallback)
+    if (abort) signal?.removeEventListener('abort', abort)
+    graph?.dispose(); container.remove()
+  }
+}
+
 export function DiagramBlock({ element }: { element: FlowchartElement }) {
   const { t } = useEditorI18n()
 
@@ -923,30 +967,11 @@ export function DiagramBlock({ element }: { element: FlowchartElement }) {
   const [previewSvg, setPreviewSvg] = useState(() => element.previewVersion === FLOW_PREVIEW_VERSION ? withoutEditorControls(element.previewSvg || '') : ''); const [contentSize, setContentSize] = useState({ width: element.contentWidth || 680, height: element.contentHeight || 300 })
   const width = element.width || Math.min(680, contentSize.width); const aspectRatio = contentSize.width / Math.max(1, contentSize.height)
   useEffect(() => {
-    if (element.previewSvg && element.previewVersion === FLOW_PREVIEW_VERSION) { setPreviewSvg(withoutEditorControls(element.previewSvg)); setContentSize({ width: element.contentWidth || 680, height: element.contentHeight || 300 }); return }
-    if (!element.nodes.length && !element.edges.length) { setPreviewSvg(EMPTY_DIAGRAM_PREVIEW); setContentSize({ width: 680, height: 300 }); return }
-    const container = document.createElement('div'); container.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:1200px;height:800px'; document.body.appendChild(container)
-    const graph = new Graph({ container, width: 1200, height: 800, async: true, magnetThreshold: 2, background: { color: '#fff' }, grid: { visible: true, type: 'mesh', size: 16, args: { color: '#d9e2f2', thickness: 1 } } }); graph.use(new Export())
-    let disposed = false
-    let ready = false
-    let exported = false
-    const exportPreview = () => {
-      if (!ready || exported || disposed || graph.getCells().some(cell => !graph.findViewByCell(cell))) return
-      exported = true
-      if (disposed) return
-      const box = graph.getContentBBox().inflate(28)
-      graph.toSVG(svg => { if (!disposed) { setPreviewSvg(withoutEditorControls(svg, element.edges.map(edge => edge.id))); setContentSize({ width: Math.max(1, Math.round(box.width)), height: Math.max(1, Math.round(box.height)) }) } }, { viewBox: box, preserveDimensions: { width: box.width, height: box.height }, copyStyles: false, serializeImages: true })
-    }
-    graph.on('render:done', () => requestAnimationFrame(() => requestAnimationFrame(exportPreview)))
-    const populate = () => {
-      if (disposed) return
-      ready = true
-      graph.fromJSON({ nodes: element.nodes.map(node => makeNode(node.shape || 'process', node.x, node.y, node)), edges: element.edges.map(edge => makeEdge(edge)) })
-      graph.getEdges().forEach(edge => applyEdgeGeometry(edge, edge.getData<EdgeData>()))
-    }
-    populate()
-    const fallback = window.setTimeout(exportPreview, 300)
-    return () => { disposed = true; window.clearTimeout(fallback); graph.dispose(); container.remove() }
+    const controller = new AbortController()
+    createFlowchartPreview(element, controller.signal).then(result => {
+      if (!controller.signal.aborted) { setPreviewSvg(result.svg); setContentSize(result.size) }
+    }).catch(() => {})
+    return () => controller.abort()
   }, [element.previewSvg, element.previewVersion, element.nodes, element.edges, element.type, element.contentWidth, element.contentHeight])
   const commit = useCallback((nodes: DiagramNode[], edges: DiagramEdge[], svg: string, size: { width: number; height: number }, canvasSettings: DiagramCanvasSettings) => { const preview = withoutEditorControls(svg); Transforms.setNodes(editor, { nodes, edges, canvasSettings, previewSvg: preview, previewVersion: FLOW_PREVIEW_VERSION, contentWidth: size.width, contentHeight: size.height, aspectRatio: size.width / size.height }, { at: DOMEditor.findPath(editor, element) }); setPreviewSvg(preview); setContentSize(size); saved() }, [editor, element])
   const resize = (event: PointerEvent<HTMLButtonElement>) => { if (readOnly || !resizing) return; const next = Math.max(260, Math.min(960, resizeStart.current.width + event.clientX - resizeStart.current.x)); Transforms.setNodes(editor, { width: Math.round(next) }, { at: DOMEditor.findPath(editor, element) }) }
@@ -959,5 +984,6 @@ export function DiagramBlock({ element }: { element: FlowchartElement }) {
   }
   const openEditor = () => { if (readOnly) return; Transforms.deselect(editor); setOpen(true) }
   const previewUrl = previewSvg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(previewSvg)}` : ''
-  return <><figure className={`sk-diagram-figure ${selected ? 'is-selected' : ''}`} contentEditable={false} style={{ width, aspectRatio, marginLeft: element.align === 'center' || element.align === 'right' ? 'auto' : 0, marginRight: element.align === 'center' ? 'auto' : 0 }} onMouseDown={selectImage}><div className="sk-diagram-preview" role="img" aria-label={t("ui.flowchartPreview")} title={t(readOnly ? 'media.clickToPreview' : 'media.clickToSelectThenPreview')} onClick={event => { if (previewUrl && shouldOpenMediaPreview(readOnly, previewOnClick.current, event)) setViewing(true) }} onContextMenu={event => { if (!previewUrl) return; event.preventDefault(); setDownloadMenu({ x: event.clientX, y: event.clientY }) }}>{previewSvg ? <img src={previewUrl} alt={t("ui.flowchartPreview")} /> : <span className="sk-diagram-loading">{t("ui.generatingPreview")}</span>}</div><div className="sk-media-corner-actions"><button aria-label={t("ui.previewFlowchart")} title={t("ui.preview")} onMouseDown={event => event.stopPropagation()} onClick={() => previewUrl && setViewing(true)}><Maximize2 size={15} /></button><button hidden={readOnly} aria-label={t("ui.editFlowchart")} title={t("ui.editFlowchart")} onMouseDown={event => event.stopPropagation()} onClick={openEditor}><Pencil size={15} /></button></div><button hidden={readOnly} className="sk-diagram-resizer" aria-label={t("ui.resizeDiagramProportionally")} onClick={event => event.stopPropagation()} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId); resizeStart.current = { x: event.clientX, width }; setResizing(true) }} onPointerMove={resize} onPointerUp={() => setResizing(false)} /></figure>{downloadMenu && previewUrl && <MediaDownloadMenu src={previewUrl} downloadName={t("diagram.downloadFilename")} position={downloadMenu} close={() => setDownloadMenu(null)} />}{viewing && previewUrl && <MediaLightbox src={previewUrl} alt={t("ui.flowchart")} downloadName={t("diagram.downloadFilename")} close={() => setViewing(false)} />}{!readOnly && open && typeof document !== 'undefined' && createPortal(<div className="sk-diagram-modal" onClick={event => { if (event.target === event.currentTarget) closeEditor() }} contentEditable={false} onMouseDown={event => event.stopPropagation()}><X6Editor element={element} close={closeEditor} commit={commit} /></div>, document.body)}</>
+  const preview = useMediaPreview(element, { src: previewUrl, width: contentSize.width, height: contentSize.height }, () => setViewing(true))
+  return <><figure className={`sk-diagram-figure ${selected ? 'is-selected' : ''}`} contentEditable={false} style={{ width, aspectRatio, marginLeft: element.align === 'center' || element.align === 'right' ? 'auto' : 0, marginRight: element.align === 'center' ? 'auto' : 0 }} onMouseDown={selectImage}><div className="sk-diagram-preview" role="img" aria-label={t("ui.flowchartPreview")} title={t(readOnly ? 'media.clickToPreview' : 'media.clickToSelectThenPreview')} onClick={event => { if (previewUrl && shouldOpenMediaPreview(readOnly, previewOnClick.current, event)) preview() }} onContextMenu={event => { if (!previewUrl) return; event.preventDefault(); setDownloadMenu({ x: event.clientX, y: event.clientY }) }}>{previewSvg ? <img src={previewUrl} alt={t("ui.flowchartPreview")} /> : <span className="sk-diagram-loading">{t("ui.generatingPreview")}</span>}</div><div className="sk-media-corner-actions"><button aria-label={t("ui.previewFlowchart")} title={t("ui.preview")} onMouseDown={event => event.stopPropagation()} onClick={() => previewUrl && preview()}><Maximize2 size={15} /></button><button hidden={readOnly} aria-label={t("ui.editFlowchart")} title={t("ui.editFlowchart")} onMouseDown={event => event.stopPropagation()} onClick={openEditor}><Pencil size={15} /></button></div><button hidden={readOnly} className="sk-diagram-resizer" aria-label={t("ui.resizeDiagramProportionally")} onClick={event => event.stopPropagation()} onPointerDown={event => { event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId); resizeStart.current = { x: event.clientX, width }; setResizing(true) }} onPointerMove={resize} onPointerUp={() => setResizing(false)} /></figure>{downloadMenu && previewUrl && <MediaDownloadMenu src={previewUrl} downloadName={t("diagram.downloadFilename")} position={downloadMenu} close={() => setDownloadMenu(null)} />}{viewing && previewUrl && <MediaLightbox src={previewUrl} alt={t("ui.flowchart")} downloadName={t("diagram.downloadFilename")} close={() => setViewing(false)} />}{!readOnly && open && typeof document !== 'undefined' && createPortal(<div className="sk-diagram-modal" onClick={event => { if (event.target === event.currentTarget) closeEditor() }} contentEditable={false} onMouseDown={event => event.stopPropagation()}><X6Editor element={element} close={closeEditor} commit={commit} /></div>, document.body)}</>
 }
