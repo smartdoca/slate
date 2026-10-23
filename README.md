@@ -71,7 +71,7 @@ Other entry points:
 | Import | Use |
 |---|---|
 | `@smartdoca/slate/yjs` | Yjs document helpers for the rich-text codec. |
-| `@smartdoca/slate/conversion` | Import and export. |
+| `@smartdoca/slate/conversion` | Import and export. See [DOCX formatting and limits](docs/DOCX_CONVERSION.md). |
 | `@smartdoca/slate/headless` | Read and create a document without mounting React. |
 | `@smartdoca/slate/codec` | Codec and schema identifiers. |
 | `@smartdoca/slate/katex` | Formula rendering. |

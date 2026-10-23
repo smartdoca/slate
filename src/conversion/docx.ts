@@ -83,12 +83,35 @@ function relationships(xml?: string) {
   return map
 }
 
-function runNodes(run: globalThis.Element): RichText[] {
-  const properties = first(run, W, 'rPr'); const marks: Partial<RichText> = {
-    bold: Boolean(first(properties || run, W, 'b')), italic: Boolean(first(properties || run, W, 'i')),
-    underline: Boolean(first(properties || run, W, 'u')), strikethrough: Boolean(first(properties || run, W, 'strike')),
-    code: attr(first(properties || run, W, 'rStyle'), W, 'val').toLowerCase().includes('code'),
+const property = (node: globalThis.Element | undefined, name: string) => node ? elements(node, name)[0] : undefined
+const wordValue = (node: globalThis.Element | undefined, name = 'val') => node?.getAttributeNS(W, name) || node?.getAttribute(`w:${name}`) || ''
+const enabledProperty = (node: globalThis.Element | undefined) => Boolean(node) && !/^(0|false|off|none)$/i.test(wordValue(node))
+
+function runMarks(properties: globalThis.Element): Partial<RichText> {
+  const size = Number(wordValue(property(properties, 'sz')))
+  const color = wordValue(property(properties, 'color'))
+  const background = wordValue(property(properties, 'shd'), 'fill')
+  const fonts = property(properties, 'rFonts')
+  const family = wordValue(fonts, 'eastAsia') || wordValue(fonts, 'ascii') || wordValue(fonts, 'hAnsi')
+  return {
+    bold: enabledProperty(property(properties, 'b')), italic: enabledProperty(property(properties, 'i')),
+    underline: enabledProperty(property(properties, 'u')), strikethrough: enabledProperty(property(properties, 'strike')),
+    code: /code/i.test(wordValue(property(properties, 'rStyle'))),
+    // Word uses half-points; the native editor uses CSS pixels (96 dpi).
+    ...(size > 0 && size <= 144 ? { fontSize: Math.max(8, Math.min(96, Math.round(size * 2 / 3))) } : {}),
+    ...(/^[a-f0-9]{6}$/i.test(color) ? { color: `#${color}` } : {}),
+    ...(/^[a-f0-9]{6}$/i.test(background) ? { backgroundColor: `#${background}` } : {}),
+    ...(family && family.length <= 200 ? { fontFamily: family } : {}),
   }
+}
+
+function paragraphStyle(properties: globalThis.Element | undefined): { align?: 'left' | 'center' | 'right' } {
+  const align = wordValue(property(properties, 'jc'))
+  return align === 'left' || align === 'center' || align === 'right' ? { align } : {}
+}
+
+function runNodes(run: globalThis.Element): RichText[] {
+  const marks = runMarks(first(run, W, 'rPr') || run)
   let value = ''
   elements(run).forEach(child => { if (child.localName === 't' || child.localName === 'delText') value += child.textContent || ''; else if (child.localName === 'tab') value += '\t'; else if (child.localName === 'br' || child.localName === 'cr') value += '\n' })
   return value ? [{ text: value, ...Object.fromEntries(Object.entries(marks).filter(([, active]) => active)) }] : []
@@ -176,7 +199,7 @@ async function parseParagraph(node: globalThis.Element, zip: JSZip, rels: Map<st
   if (style && style !== 'normal' && !title && !code && !numPr) warning(warnings, 'format-degraded', `DOCX paragraph style "${style}" was converted to a normal paragraph.`)
   const block = code
     ? ({ type: 'code-block', id: createId(), language: 'plaintext', code: children.map(item => Text.isText(item) ? item.text : Node.string(item)).join(''), children: children.length ? children : [{ text: '' }] } as RichElement)
-    : paragraph(children, { ...(title ? { title: `h${title}` } : {}), ...(numPr ? { list: nums.get(numId) || 'ol', indentation: level } : {}) })
+    : paragraph(children, { ...paragraphStyle(properties), ...(title ? { title: `h${title}` } : {}), ...(numPr ? { list: nums.get(numId) || 'ol', indentation: level } : {}) })
   return [block, ...images]
 }
 
@@ -235,7 +258,15 @@ export async function importDocx(source: Uint8Array | ArrayBuffer | Blob, option
 }
 
 type PackageState = { rels: string[]; media: Array<{ path: string; bytes: Uint8Array; mimeType: string }>; nextRel: number; nextImage: number; warnings: ConversionWarning[]; options: DocumentExportOptions }
-const runXml = (text: string, marks: Partial<RichText> = {}) => `<w:r><w:rPr>${marks.bold ? '<w:b/>' : ''}${marks.italic ? '<w:i/>' : ''}${marks.underline ? '<w:u w:val="single"/>' : ''}${marks.strikethrough ? '<w:strike/>' : ''}${marks.code ? '<w:rStyle w:val="CodeChar"/>' : ''}</w:rPr><w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`
+function runStyleXml(marks: Partial<RichText>) {
+  const family = marks.fontFamily?.split(',')[0]?.trim().replace(/^['"]|['"]$/g, '')
+  return (Number.isFinite(marks.fontSize) ? `<w:sz w:val="${Math.round(marks.fontSize! * 1.5)}"/><w:szCs w:val="${Math.round(marks.fontSize! * 1.5)}"/>` : '')
+    + (family ? `<w:rFonts w:ascii="${xmlEscape(family)}" w:hAnsi="${xmlEscape(family)}" w:eastAsia="${xmlEscape(family)}"/>` : '')
+    + (/^#[a-f0-9]{6}$/i.test(marks.color || '') ? `<w:color w:val="${marks.color!.slice(1)}"/>` : '')
+    + (/^#[a-f0-9]{6}$/i.test(marks.backgroundColor || '') ? `<w:shd w:val="clear" w:fill="${marks.backgroundColor!.slice(1)}"/>` : '')
+}
+
+const runXml = (text: string, marks: Partial<RichText> = {}) => `<w:r><w:rPr>${runStyleXml(marks)}${marks.bold ? '<w:b/>' : ''}${marks.italic ? '<w:i/>' : ''}${marks.underline ? '<w:u w:val="single"/>' : ''}${marks.strikethrough ? '<w:strike/>' : ''}${marks.code ? '<w:rStyle w:val="CodeChar"/>' : ''}</w:rPr><w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>`
 
 function inlineDocx(children: RichNode[], state: PackageState, blockId: string): string {
   return children.map(node => {
@@ -254,7 +285,7 @@ function paragraphXml(element: RichElement, state: PackageState, overrideChildre
   const title = element.type === 'paragraph' ? element.title : undefined
   const style = element.type === 'code-block' ? 'Code' : title ? `Heading${title.slice(1)}` : undefined
   const list = data.list
-  const properties = `<w:pPr>${style ? `<w:pStyle w:val="${style}"/>` : ''}${list ? `<w:numPr><w:ilvl w:val="${Number(data.indentation || 0)}"/><w:numId w:val="${list === 'ul' ? 1 : 2}"/></w:numPr>` : ''}</w:pPr>`
+  const properties = `<w:pPr>${element.align === 'left' || element.align === 'center' || element.align === 'right' ? `<w:jc w:val="${element.align}"/>` : ''}${style ? `<w:pStyle w:val="${style}"/>` : ''}${list ? `<w:numPr><w:ilvl w:val="${Number(data.indentation || 0)}"/><w:numId w:val="${list === 'ul' ? 1 : 2}"/></w:numPr>` : ''}</w:pPr>`
   const children = overrideChildren || element.children
   return `<w:p>${properties}${inlineDocx(children, state, element.id)}</w:p>`
 }
@@ -301,7 +332,7 @@ async function blockXml(element: RichElement, state: PackageState): Promise<stri
   if (element.type === 'table') {
     const rows = element.children as TableRowElement[]; const grid = element.columns.map(column => `<w:gridCol w:w="${Math.max(600, Math.round(column.width * 15))}"/>`).join('')
     if (element.merges.length) warning(state.warnings, 'format-degraded', 'Merged table cells were exported as independent cells.', element.id)
-    const body = rows.map(row => `<w:tr>${(row.children as TableCellElement[]).map(cell => `<w:tc><w:tcPr/><w:p>${cell.children.flatMap(child => Element.isElement(child) ? inlineDocx(child.children, state, cell.id) : runXml(child.text)).join('')}</w:p></w:tc>`).join('')}</w:tr>`).join('')
+    const body = rows.map(row => `<w:tr>${(row.children as TableCellElement[]).map(cell => `<w:tc><w:tcPr/><w:p>${cell.children.flatMap(child => Element.isElement(child) ? inlineDocx(child.children, state, cell.id) : runXml(child.text, child)).join('')}</w:p></w:tc>`).join('')}</w:tr>`).join('')
     return `<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:color="D9D9D9"/><w:left w:val="single" w:color="D9D9D9"/><w:bottom w:val="single" w:color="D9D9D9"/><w:right w:val="single" w:color="D9D9D9"/><w:insideH w:val="single" w:color="D9D9D9"/><w:insideV w:val="single" w:color="D9D9D9"/></w:tblBorders></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${body}</w:tbl>`
   }
   if (element.type === 'image') return imageXml(element, state)
@@ -311,14 +342,14 @@ async function blockXml(element: RichElement, state: PackageState): Promise<stri
   warning(state.warnings, 'format-degraded', `${element.type} was exported as readable text.`, element.id); return paragraphXml(paragraph([{ text: Node.string(element) || `[${element.type}]` }]), state)
 }
 
-const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="${W}"><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:rPr><w:sz w:val="22"/></w:rPr></w:style>${[1,2,3,4,5].map(level => `<w:style w:type="paragraph" w:styleId="Heading${level}"><w:name w:val="heading ${level}"/><w:basedOn w:val="Normal"/><w:qFormat/><w:rPr><w:b/><w:sz w:val="${34-level*2}"/></w:rPr></w:style>`).join('')}<w:style w:type="paragraph" w:styleId="Code"><w:name w:val="Code"/><w:basedOn w:val="Normal"/><w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New"/></w:rPr></w:style><w:style w:type="character" w:styleId="CodeChar"><w:name w:val="Code Char"/><w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New"/></w:rPr></w:style></w:styles>`
+const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="${W}"><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:pPr><w:spacing w:after="120" w:line="384" w:lineRule="auto"/></w:pPr><w:rPr><w:sz w:val="24"/></w:rPr></w:style>${[1,2,3,4,5].map(level => `<w:style w:type="paragraph" w:styleId="Heading${level}"><w:name w:val="heading ${level}"/><w:basedOn w:val="Normal"/><w:qFormat/><w:rPr><w:b/><w:sz w:val="${[0,42,36,30,27,24][level]}"/></w:rPr></w:style>`).join('')}<w:style w:type="paragraph" w:styleId="Code"><w:name w:val="Code"/><w:basedOn w:val="Normal"/><w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New"/></w:rPr></w:style><w:style w:type="character" w:styleId="CodeChar"><w:name w:val="Code Char"/><w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New"/></w:rPr></w:style></w:styles>`
 const numberingXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering xmlns:w="${W}"><w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/><w:lvlText w:val="•"/></w:lvl></w:abstractNum><w:abstractNum w:abstractNumId="2"><w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num><w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num></w:numbering>`
 
 export async function exportDocx(value: EditorValue, options: Omit<DocumentExportOptions, 'format'> & { format?: 'docx' } = {}): Promise<DocumentExportResult> {
   const fullOptions = { ...options, format: 'docx' as const }; const signal = conversionSignal(options.signal); throwIfCancelled(signal)
   const state: PackageState = { rels: [], media: [], nextRel: 10, nextImage: 1, warnings: [], options: fullOptions }; const parts: string[] = []
   for (const block of flattenBlocks(value, state.warnings)) { throwIfCancelled(signal); parts.push(await blockXml(block, state)) }
-  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${W}" xmlns:r="${R}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="${A}" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${parts.join('')}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080"/></w:sectPr></w:body></w:document>`
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${W}" xmlns:r="${R}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="${A}" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${parts.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720"/></w:sectPr></w:body></w:document>`
   const defaults = new Map<string, string>([['rels','application/vnd.openxmlformats-package.relationships+xml'],['xml','application/xml']]); state.media.forEach(item => defaults.set(extOf(item.path), item.mimeType))
   const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">${[...defaults].map(([extension, type]) => `<Default Extension="${extension}" ContentType="${type}"/>`).join('')}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/></Types>`
   const zip = new JSZip(); zip.file('[Content_Types].xml', contentTypes); zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`)
