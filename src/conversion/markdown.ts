@@ -65,23 +65,41 @@ async function importImage(url: string, alt: string, options: DocumentImportOpti
   }
 }
 
+const unescapeMarkdown = (value: string) => value.replace(/\\([\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e])/g, '$1')
+
+function warnMathematicalText(source: string, warnings: ConversionWarning[]) {
+  // Escaped punctuation, link destinations and code are literal Markdown,
+  // not TeX. In particular, a currency opener followed by another price
+  // must not turn the intervening prose into a formula.
+  const text = source.replace(/\\[\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e]/g, '').replace(/https?:\/\/\S+/gi, '')
+  if (/\$[^\n$]+\$(?!\d)|\$\$|\\begin\{/i.test(text)) warning(warnings, 'format-degraded', 'Formula or mathematical markup was imported as readable source text; it is not an editable formula.')
+}
+
 function parseInline(source: string, warnings: ConversionWarning[], marks: Partial<RichText> = {}): { nodes: RichNode[]; images: Array<{ alt: string; url: string }> } {
   const nodes: RichNode[] = []; const images: Array<{ alt: string; url: string }> = []
-  const pattern = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~|`([^`]+)`|<u>(.*?)<\/u>|\*([^*]+)\*|_([^_]+)_/gi
+  const mathematicalText: string[] = []
+  const pattern = /\\(?<escaped>[\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e])|!\[(?<imageAlt>(?:\\.|[^\]\\])*)\]\((?<imageUrl>(?:\\.|[^)\\])+)\)|\[(?<linkLabel>(?:\\.|[^\]\\])+)\]\((?<linkUrl>(?:\\.|[^)\\])+)\)|\*\*(?<boldStars>(?:\\.|[^*\\])+)\*\*|__(?<boldUnderscores>(?:\\.|[^_\\])+)__|~~(?<strike>(?:\\.|[^~\\])+)~~|`(?<code>[^`]+)`|<u>(?<underline>.*?)<\/u>|\*(?<italicStars>(?:\\.|[^*\\])+)\*|_(?<italicUnderscores>(?:\\.|[^_\\])+)_/gi
   let offset = 0; let match: RegExpExecArray | null
-  const pushText = (text: string, next = marks) => { if (text) nodes.push({ text, ...next }) }
+  const pushText = (text: string, next = marks, literal = false) => {
+    if (!text) return
+    if (!next.code) mathematicalText.push(literal ? ' ' : text)
+    nodes.push({ text: literal ? text : unescapeMarkdown(text), ...next })
+  }
   while ((match = pattern.exec(source))) {
     pushText(source.slice(offset, match.index))
-    if (match[1] !== undefined) images.push({ alt: match[1], url: cleanUrl(match[2]) })
-    else if (match[3] !== undefined) nodes.push(...importedLink(cleanUrl(match[4]), parseInline(match[3], warnings, marks).nodes, warnings))
-    else if (match[5] !== undefined || match[6] !== undefined) pushText(match[5] ?? match[6], { ...marks, bold: true })
-    else if (match[7] !== undefined) pushText(match[7], { ...marks, strikethrough: true })
-    else if (match[8] !== undefined) pushText(match[8], { ...marks, code: true })
-    else if (match[9] !== undefined) pushText(match[9], { ...marks, underline: true })
-    else pushText(match[10] ?? match[11], { ...marks, italic: true })
+    const group = match.groups!
+    if (group.escaped !== undefined) pushText(group.escaped, marks, true)
+    else if (group.imageAlt !== undefined) images.push({ alt: unescapeMarkdown(group.imageAlt), url: cleanUrl(unescapeMarkdown(group.imageUrl)) })
+    else if (group.linkLabel !== undefined) nodes.push(...importedLink(cleanUrl(unescapeMarkdown(group.linkUrl)), parseInline(group.linkLabel, warnings, marks).nodes, warnings))
+    else if (group.boldStars !== undefined || group.boldUnderscores !== undefined) pushText(group.boldStars ?? group.boldUnderscores, { ...marks, bold: true })
+    else if (group.strike !== undefined) pushText(group.strike, { ...marks, strikethrough: true })
+    else if (group.code !== undefined) pushText(group.code, { ...marks, code: true }, true)
+    else if (group.underline !== undefined) pushText(group.underline, { ...marks, underline: true })
+    else pushText(group.italicStars ?? group.italicUnderscores, { ...marks, italic: true })
     offset = pattern.lastIndex
   }
   pushText(source.slice(offset))
+  warnMathematicalText(mathematicalText.join(''), warnings)
   return { nodes: nodes.length ? nodes : [{ text: '' }], images }
 }
 
@@ -149,7 +167,6 @@ export async function importMarkdown(source: string | Uint8Array | Blob, options
     const content = heading?.[2] ?? (todo ? listContent.slice(3).replace(/^\s+/, '') : list?.[3]) ?? quote?.[1] ?? line
     if (unsupportedHtml(content)) warning(warnings, 'unsupported-content', 'Unsupported HTML was imported as readable text; its layout and style are not preserved.')
     const readableContent = unsupportedHtml(content) ? readableMarkdownText(content) : content
-    if (/\$[^\n$]+\$|\$\$|\\\[|\\begin\{/i.test(readableContent)) warning(warnings, 'format-degraded', 'Formula or mathematical markup was imported as readable source text; it is not an editable formula.')
     const parsed = parseInline(readableContent, warnings)
     const orderedStart = list && !todo ? list[2].match(/^(\d+)/) : null
     const properties: Record<string, unknown> = heading ? { title: `h${heading[1].length}` } : list ? todo ? { list: 'checkbox', checked: /^\[[xX]\]/.test(listContent), indentation: Math.floor(list[1].replace(/\t/g, '  ').length / 2) } : { list: orderedStart ? 'ol' : 'ul', indentation: Math.floor(list[1].replace(/\t/g, '  ').length / 2), ...(orderedStart && Number(orderedStart[1]) > 1 ? { listOrder: Number(orderedStart[1]) } : {}) } : quote ? { quote: true } : {}
