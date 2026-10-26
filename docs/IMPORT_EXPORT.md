@@ -65,6 +65,8 @@ Both directions accept `signal` and `maxBytes`. Defaults are 25 MiB compressed i
 
 Conversion warnings are recoverable and contain `code`, `message`, and optional `blockId`. A corrupt DOCX, unsupported file type, cancellation or size violation rejects the Promise instead of returning a partial success.
 
+Markdown backslash escapes are decoded as literal punctuation, including brackets in citation labels and escaped image descriptions. Code spans and link destinations are excluded from formula detection. Dollar prices and dollar-containing URLs are ordinary text; actual mathematical source still produces a readable-source warning.
+
 Import is best-effort within supported file formats. Unsupported elements retain extractable text, or an explicit `[Unsupported content: …]` placeholder when no readable text exists. A missing image relationship, missing embedded image, image read/upload failure, missing resource callback, or invalid returned asset path does **not** reject the entire import. Each failed image retains its description/name or an `[Image: …]` placeholder, including images beside text and inside tables. Other images and subsequent paragraphs continue importing; only successful resources appear in `resources`.
 
 Imported hyperlinks retain HTTP(S), mailto, root-relative paths and fragment anchors. File-relative links (such as `./guide.md`, which lose their original base directory), local-file/temporary/unsupported protocols and malformed URLs degrade to their readable labels with `unsupported-content` warnings, including links in tables. No unsafe `url`/`href` is persisted for these links. Host validation and asset permissions must remain enabled; this is not permission to bypass them.
