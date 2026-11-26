@@ -38,7 +38,8 @@ it('switches locale copy without replacing the editor document', async () => {
     await act(async () => root.render(createElement(RichTextEditor, { ref, locale: 'ja', messages: { 'document.titlePlaceholder': '題名' }, initialValue: [], firstLineTitle: true })))
     expect(ref.current!.editor).toBe(editor)
     expect(hints()[0]).toBe('題名')
-    expect(hints()[1]).toBe('Start writing')
+    expect(host.querySelector('.sk-editor')?.getAttribute('lang')).toBe('ja')
+    expect(hints()[1]).toBe('書き始めましょう')
   } finally { await act(async () => root.unmount()); host.remove() }
 })
 

@@ -1,18 +1,20 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import type { EditorLanguagePack } from './types'
 import { zhCN, enUS } from './languages'
+import { additionalCatalogs } from './locales'
 export { zhCN, enUS }
 export type EditorMessages = EditorLanguagePack
-export type EditorLocale = 'zh' | 'en'
+const catalogs = { zh: zhCN, en: enUS, ...additionalCatalogs }
+export type EditorLocale = keyof typeof catalogs
 
-/** Built-in catalogs. Omitted locale is Chinese. Any code other than `zh` uses English. */
+/** Omitted locale uses Chinese. Unknown locale codes use English. */
 export function editorCatalog(locale?: string): EditorLanguagePack {
-  return !locale || locale === 'zh' ? zhCN : enUS
+  return !locale ? zhCN : Object.hasOwn(catalogs, locale) ? catalogs[locale as EditorLocale] : enUS
 }
 
-export function editorHtmlLang(locale?: string, language?: EditorLanguagePack): 'zh-CN' | 'en' {
+export function editorHtmlLang(locale?: string, language?: EditorLanguagePack): Exclude<EditorLocale, 'zh'> | 'zh-CN' {
   if (locale === 'zh') return 'zh-CN'
-  if (locale) return 'en'
+  if (locale) return Object.hasOwn(additionalCatalogs, locale) ? locale as keyof typeof additionalCatalogs : 'en'
   return language === enUS ? 'en' : 'zh-CN'
 }
 
