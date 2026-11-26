@@ -45,7 +45,7 @@ export function Editor() {
 | `onAttachmentPreview` | `(attachment: AttachmentElement) => void` | 宿主实现附件预览，接收稳定 path 和元信息。编辑时先选中、再次点击预览；只读时单击预览。 |
 | `comments` | `EditorComments` | 宿主拥有的评论界面。 |
 | `formulaRenderer` | `FormulaRenderer` | 公式块渲染。 |
-| `locale` | `string` | `zh` 和省略为中文，其他代码为英文。 |
+| `locale` | `string` | `zh`, `en`, `zh-Hant`, `ja`, `fr`, `ko`, `es`, `ru`。缺省使用简体中文，未知代码使用英文。 |
 | `messages` | `Record<string, string>` | 替换单个文案键。 |
 | `language` | `EditorLanguagePack` | 替换 `locale` 选中的整本词典。 |
 | `onOutlineChange` | `(headings) => void` | 标题大纲更新。 |

@@ -46,7 +46,7 @@ export function Editor() {
 | `onMediaPreview` | `(event: MediaPreviewEvent) => void` | Host-owned image/flowchart/mind-map gallery. Includes native block IDs, document order, metadata and lazy authorized/projection URLs. See [media preview](docs/MEDIA_PREVIEW.md). |
 | `comments` | `EditorComments` | Host-owned comment UI. |
 | `formulaRenderer` | `FormulaRenderer` | Renders formula blocks. |
-| `locale` | `string` | `zh` and omitted stay Chinese. Any other code shows English. |
+| `locale` | `string` | `zh`, `en`, `zh-Hant`, `ja`, `fr`, `ko`, `es`, `ru`. Omitted uses Simplified Chinese. Unknown codes use English. |
 | `messages` | `Record<string, string>` | Replaces individual dictionary keys. |
 | `language` | `EditorLanguagePack` | Replaces the catalog selected by `locale`. |
 | `onOutlineChange` | `(headings) => void` | Heading outline updates. |
